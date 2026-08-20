@@ -22,8 +22,9 @@ import database
 import ml_engine
 
 # ── App Configuration ────────────────────────────────────────────
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+app = Flask(__name__, static_folder='static', static_url_path='/static', template_folder='templates')
 app.secret_key = 'student-portal-secret-key-2025'
+TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
@@ -64,67 +65,67 @@ def staff_required(f):
 # ── Page Routes ──────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(TEMPLATES_DIR, 'index.html')
 
 
 @app.route('/student_dashboard.html')
 @login_required
 def student_dashboard():
-    return send_from_directory('.', 'student_dashboard.html')
+    return send_from_directory(TEMPLATES_DIR, 'student_dashboard.html')
 
 
 @app.route('/ai_insights.html')
 @login_required
 def ai_insights_page():
-    return send_from_directory('.', 'ai_insights.html')
+    return send_from_directory(TEMPLATES_DIR, 'ai_insights.html')
 
 
 @app.route('/add_certificate.html')
 @login_required
 def add_certificate_page():
-    return send_from_directory('.', 'add_certificate.html')
+    return send_from_directory(TEMPLATES_DIR, 'add_certificate.html')
 
 
 @app.route('/certificates.html')
 @login_required
 def certificates_page():
-    return send_from_directory('.', 'certificates.html')
+    return send_from_directory(TEMPLATES_DIR, 'certificates.html')
 
 
 @app.route('/gallery.html')
 @login_required
 def gallery_page():
-    return send_from_directory('.', 'gallery.html')
+    return send_from_directory(TEMPLATES_DIR, 'gallery.html')
 
 
 @app.route('/notifications.html')
 @login_required
 def notifications_page():
-    return send_from_directory('.', 'notifications.html')
+    return send_from_directory(TEMPLATES_DIR, 'notifications.html')
 
 
 @app.route('/settings.html')
 @login_required
 def settings_page():
-    return send_from_directory('.', 'settings.html')
+    return send_from_directory(TEMPLATES_DIR, 'settings.html')
 
 
 @app.route('/staff_dashboard.html')
 @staff_required
 def staff_dashboard_page():
-    return send_from_directory('.', 'staff_dashboard.html')
+    return send_from_directory(TEMPLATES_DIR, 'staff_dashboard.html')
 
 
 @app.route('/staff_reviews.html')
 @staff_required
 def staff_reviews_page():
-    return send_from_directory('.', 'staff_reviews.html')
+    return send_from_directory(TEMPLATES_DIR, 'staff_reviews.html')
 
 
 @app.route('/staff_notifications.html')
 @staff_required
 def staff_notifications_page():
-    return send_from_directory('.', 'staff_notifications.html')
+    return send_from_directory(TEMPLATES_DIR, 'staff_notifications.html')
 
 
 # ── Serve Uploaded Files & Root Static ────────────────────────────
@@ -136,8 +137,17 @@ def uploaded_file(filename):
 
 @app.route('/<path:filename>')
 def serve_root_file(filename):
-    if filename.endswith(('.html', '.jpg', '.jpeg', '.png', '.ico', '.svg', '.css', '.js')):
-        return send_from_directory('.', filename)
+    if filename.endswith('.html'):
+        if os.path.exists(os.path.join(TEMPLATES_DIR, filename)):
+            return send_from_directory(TEMPLATES_DIR, filename)
+    if filename.endswith(('.jpg', '.jpeg', '.png', '.ico', '.svg', '.webp')):
+        images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images')
+        if os.path.exists(os.path.join(images_dir, filename)):
+            return send_from_directory(images_dir, filename)
+    if filename.endswith(('.jpg', '.jpeg', '.png', '.ico', '.svg', '.css', '.js')):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        if os.path.exists(os.path.join(base_dir, filename)):
+            return send_from_directory(base_dir, filename)
     return jsonify({"error": "File not found"}), 404
 
 
