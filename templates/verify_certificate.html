@@ -79,6 +79,14 @@
       word-break: break-all;
       margin-top: 20px;
     }
+    @media (max-width: 640px) {
+      .verify-body { padding: 16px 12px; }
+      .verify-card { padding: 24px 16px; border-radius: var(--portal-radius-lg); }
+      .verify-info-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 0; }
+      .verify-val { text-align: left; max-width: 100% !important; }
+      .verify-card h1 { font-size: 1.2rem !important; }
+      .verify-badge-shield { width: 48px; height: 48px; font-size: 1.5rem; }
+    }
     @media print {
       body { background: #ffffff; }
       .verify-card { box-shadow: none; border: 1px solid #000; }
