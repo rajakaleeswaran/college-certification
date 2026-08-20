@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CertPortal AI Assistant — Student Career Copilot</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .ai-chat-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      height: calc(100vh - 170px);
+      min-height: 580px;
+    }
+    @media (max-width: 900px) {
+      .ai-chat-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+    .ai-sidebar-card {
+      background: #ffffff;
+      border-radius: var(--portal-radius-xl);
+      border: 1px solid var(--portal-slate-200);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--portal-shadow-sm);
+      overflow-y: auto;
+    }
+    .ai-chat-container {
+      background: #ffffff;
+      border-radius: var(--portal-radius-xl);
+      border: 1px solid var(--portal-slate-200);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--portal-shadow-sm);
+      overflow: hidden;
+    }
+    .ai-chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--portal-slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--portal-slate-50);
+    }
+    .ai-chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #fafbfc;
+    }
+    .ai-msg {
+      max-width: 82%;
+      display: flex;
+      gap: 12px;
+      animation: msgFadeIn 0.2s ease-out;
+    }
+    .ai-msg--user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .ai-msg--bot {
+      align-self: flex-start;
+    }
+    .ai-msg__avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .ai-msg--bot .ai-msg__avatar {
+      background: linear-gradient(135deg, #0d9488, #4f46e5);
+      color: #ffffff;
+    }
+    .ai-msg--user .ai-msg__avatar {
+      background: var(--portal-slate-200);
+      color: var(--portal-slate-800);
+    }
+    .ai-msg__bubble {
+      padding: 14px 18px;
+      border-radius: 18px;
+      font-size: 0.925rem;
+      line-height: 1.55;
+    }
+    .ai-msg--bot .ai-msg__bubble {
+      background: #ffffff;
+      border: 1px solid var(--portal-slate-200);
+      color: var(--portal-slate-800);
+      border-top-left-radius: 4px;
+      box-shadow: var(--portal-shadow-sm);
+    }
+    .ai-msg--user .ai-msg__bubble {
+      background: var(--portal-brand-600);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+    }
+    .ai-chat-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--portal-slate-200);
+      background: #ffffff;
+    }
+    .ai-quick-commands {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .ai-cmd-pill {
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 16px;
+      background: var(--portal-slate-100);
+      color: var(--portal-slate-700);
+      border: 1px solid var(--portal-slate-200);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .ai-cmd-pill:hover {
+      background: var(--portal-brand-50, #f0fdfa);
+      color: var(--portal-brand-600);
+      border-color: var(--portal-brand-300, #5eead4);
+    }
+    .ai-input-box {
+      display: flex;
+      gap: 10px;
+    }
+    @keyframes msgFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="portal-body">
+
+  <main class="portal-container" style="max-width: 1300px;">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">CertPortal AI Assistant & Career Copilot</h1>
+        <p class="portal-page-description">Interactive student context-aware assistant powered by RAG, live credential verification data, and prompt security.</p>
+      </div>
+      <div class="portal-page-actions">
+        <a href="/job_match.html" class="portal-btn portal-btn--outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          Job Description Matcher
+        </a>
+      </div>
+    </div>
+
+    <div class="ai-chat-layout">
+      <!-- Left Sidebar: Live Context RAG Dossier -->
+      <aside class="ai-sidebar-card">
+        <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--portal-slate-100);">
+          <div class="portal-avatar-circle" id="ragAvatar" style="width: 44px; height: 44px;">ST</div>
+          <div>
+            <div style="font-weight: 700; color: var(--portal-slate-900);" id="ragStudentName">Loading...</div>
+            <div style="font-size: 0.8rem; color: var(--portal-slate-500);" id="ragSubInfo">Year • Dept</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400); margin-bottom: 6px;">Placement Readiness</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--portal-slate-50); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--portal-slate-200);">
+            <span style="font-size: 1.2rem; font-weight: 800; color: var(--portal-brand-600);" id="ragPlacementScore">0%</span>
+            <span class="portal-badge portal-badge--success" id="ragPlacementBadge">Calculated</span>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400); margin-bottom: 6px;">Top Target Career Track</div>
+          <div style="background: var(--portal-slate-50); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--portal-slate-200);">
+            <div style="font-weight: 700; color: var(--portal-slate-800); font-size: 0.875rem;" id="ragCareerTrack">Full-Stack Web</div>
+            <div style="font-size: 0.8rem; color: var(--portal-slate-500); margin-top: 2px;">Match Confidence: <strong id="ragCareerScore" style="color:var(--portal-brand-600);">0%</strong></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400); margin-bottom: 6px;">Faculty Mentor</div>
+          <div style="font-size: 0.85rem; color: var(--portal-slate-800); background: #eef2ff; padding: 10px 14px; border-radius: 8px; border: 1px solid #c7d2fe;">
+            👨‍🏫 <strong id="ragMentorName">Assigned Faculty</strong>
+            <div style="font-size: 0.75rem; color: #4338ca;" id="ragMentorEmail">faculty@college.edu</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400); margin-bottom: 6px;">Top Skills to Learn Next</div>
+          <div id="ragMissingSkills" style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <!-- Gaps populated here -->
+          </div>
+        </div>
+
+        <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--portal-slate-100); font-size: 0.75rem; color: var(--portal-slate-400); text-align: center;">
+          🛡️ AI Prompt Injection Defense Active
+        </div>
+      </aside>
+
+      <!-- Right Chat Window -->
+      <section class="ai-chat-container">
+        <div class="ai-chat-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="ai-msg__avatar" style="width: 32px; height: 32px; font-size: 0.85rem;">🤖</div>
+            <div>
+              <div style="font-weight: 700; color: var(--portal-slate-900); font-size: 0.95rem;">CertPortal AI Copilot</div>
+              <div style="font-size: 0.75rem; color: #10b981; display: flex; align-items: center; gap: 4px;">
+                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Context Connected (Live SQLite RAG)
+              </div>
+            </div>
+          </div>
+          <button type="button" class="portal-btn portal-btn--outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="clearChat()">Clear Chat</button>
+        </div>
+
+        <!-- Messages stream -->
+        <div class="ai-chat-messages" id="chatStream">
+          <div class="ai-msg ai-msg--bot">
+            <div class="ai-msg__avatar">🤖</div>
+            <div class="ai-msg__bubble">
+              👋 Hello! I am your <strong>CertPortal AI Assistant</strong>. I have analyzed your verified certifications, academic year, and skill inventory.<br><br>
+              How can I assist you with your career readiness, missing skills, or interview roadmap today?
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Input Box & Slash Commands -->
+        <div class="ai-chat-footer">
+          <div class="ai-quick-commands">
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('/career')">🎯 /career</span>
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('/skills')">💼 /skills</span>
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('/gap')">🔍 /gap</span>
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('/roadmap')">🗺️ /roadmap</span>
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('/placement')">📈 /placement</span>
+            <span class="ai-cmd-pill" onclick="sendQuickCommand('Am I ready for a software developer role?')">💡 Am I ready for software role?</span>
+          </div>
+
+          <form class="ai-input-box" onsubmit="handleChatSubmit(event)">
+            <input type="text" id="chatInputField" class="portal-form-input" placeholder="Type your question or slash command (e.g. /roadmap)..." autocomplete="off" required>
+            <button type="submit" class="portal-btn portal-btn--primary" id="chatSendBtn" style="padding: 0 20px;">
+              <span>Send</span>
+            </button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let studentCtx = null;
+
+    async function initAIChatPage() {
+      const user = await initPortal('/ai_assistant.html');
+      if (!user) return;
+
+      await loadStudentContext();
+    }
+
+    async function loadStudentContext() {
+      studentCtx = await API.get('/api/ai/context');
+      if (!studentCtx) return;
+
+      const initials = (studentCtx.student_name || 'ST').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('ragAvatar').textContent = initials;
+      document.getElementById('ragStudentName').textContent = studentCtx.student_name;
+      document.getElementById('ragSubInfo').textContent = `Year ${studentCtx.year} • ${studentCtx.department}`;
+      document.getElementById('ragPlacementScore').textContent = `${studentCtx.placement_readiness_score}%`;
+      document.getElementById('ragPlacementBadge').textContent = studentCtx.placement_badge;
+      document.getElementById('ragCareerTrack').textContent = studentCtx.primary_career_track;
+      document.getElementById('ragCareerScore').textContent = `${studentCtx.career_readiness_score}%`;
+      document.getElementById('ragMentorName').textContent = studentCtx.mentor_name;
+      document.getElementById('ragMentorEmail').textContent = studentCtx.mentor_email;
+
+      const missingBox = document.getElementById('ragMissingSkills');
+      const gaps = studentCtx.top_missing_skills || [];
+      if (gaps.length === 0) {
+        missingBox.innerHTML = '<span style="color:var(--portal-slate-400); font-size:0.8rem;">All core skills mapped!</span>';
+      } else {
+        missingBox.innerHTML = gaps.map(s => `<span class="portal-badge portal-badge--warning">${escapeHtml(s)}</span>`).join('');
+      }
+    }
+
+    function appendMessage(sender, text, isHtml = false) {
+      const stream = document.getElementById('chatStream');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `ai-msg ai-msg--${sender}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'ai-msg__avatar';
+      avatar.textContent = (sender === 'bot') ? '🤖' : '👤';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'ai-msg__bubble';
+      
+      if (isHtml) {
+        bubble.innerHTML = text;
+      } else {
+        // Convert basic markdown formatting
+        let formatted = escapeHtml(text)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/\n/g, '<br>');
+        bubble.innerHTML = formatted;
+      }
+
+      msgDiv.appendChild(avatar);
+      msgDiv.appendChild(bubble);
+      stream.appendChild(msgDiv);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    async function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chatInputField');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      input.value = '';
+
+      // Typing placeholder
+      const stream = document.getElementById('chatStream');
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'ai-msg ai-msg--bot';
+      typingDiv.id = 'typingIndicator';
+      typingDiv.innerHTML = `
+        <div class="ai-msg__avatar">🤖</div>
+        <div class="ai-msg__bubble" style="color: var(--portal-slate-400); font-style: italic;">
+          Analyzing student profile & generating response...
+        </div>
+      `;
+      stream.appendChild(typingDiv);
+      stream.scrollTop = stream.scrollHeight;
+
+      const res = await API.post('/api/ai/chat', { message: text });
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+
+      if (res && res.response) {
+        appendMessage('bot', res.response);
+      } else {
+        appendMessage('bot', 'Sorry, I encountered an issue communicating with the AI service. Please try again.');
+      }
+    }
+
+    function sendQuickCommand(cmd) {
+      document.getElementById('chatInputField').value = cmd;
+      handleChatSubmit();
+    }
+
+    function clearChat() {
+      const stream = document.getElementById('chatStream');
+      stream.innerHTML = `
+        <div class="ai-msg ai-msg--bot">
+          <div class="ai-msg__avatar">🤖</div>
+          <div class="ai-msg__bubble">
+            Chat cleared. How can I help you today?
+          </div>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', initAIChatPage);
+  </script>
+</body>
+</html>

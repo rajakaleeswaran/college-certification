@@ -123,7 +123,7 @@
           <td class="portal-table__td" style="color:var(--portal-slate-400); font-weight:500;">${idx + 1}</td>
           <td class="portal-table__td">
             <div style="font-weight:600; color:var(--portal-slate-900);">${escapeHtml(c.title)}</div>
-            ${c.verification_code ? `<div style="font-family:var(--portal-font-mono); font-size:0.725rem; color:var(--portal-brand-600);">${escapeHtml(c.verification_code)}</div>` : ''}
+            ${c.verification_code ? `<a href="/verify/${escapeHtml(c.verification_code)}" target="_blank" style="font-family:var(--portal-font-mono); font-size:0.725rem; color:var(--portal-brand-600); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">🔗 ${escapeHtml(c.verification_code)}</a>` : ''}
           </td>
           <td class="portal-table__td"><span class="portal-badge portal-badge--info">${escapeHtml(c.cert_type || 'General')}</span></td>
           <td class="portal-table__td">${formatDate(c.issue_date)}</td>
@@ -136,7 +136,8 @@
           </td>
           <td class="portal-table__td" style="text-align: right;">
             <div style="display:flex; gap:6px; justify-content:flex-end;">
-              <button class="portal-btn portal-btn--outline portal-btn--sm" onclick="viewDigitalBadge(${c.id})">Digital Badge</button>
+              <a href="/verify/${escapeHtml(c.verification_code)}" target="_blank" class="portal-btn portal-btn--outline portal-btn--sm">Public Proof</a>
+              <button class="portal-btn portal-btn--primary portal-btn--sm" onclick="viewDigitalBadge(${c.id})">Digital Badge</button>
             </div>
           </td>
         </tr>

@@ -211,16 +211,17 @@
       }
 
       const res = await API.post('/api/ml/extract-metadata', { text });
-      if (res && res.success) {
+      if (res) {
         if (res.title) document.getElementById('certTitle').value = res.title;
         if (res.issue_date) document.getElementById('issueDate').value = res.issue_date;
-        if (res.category) document.getElementById('certType').value = res.category;
+        if (res.credential_id) document.getElementById('sourceUrl').value = res.credential_id;
 
-        if (res.skills && res.skills.length > 0) {
-          res.skills.forEach(s => addSkillChip(s));
+        if (res.skills) {
+          const skillsArr = res.skills.split(',').map(s => s.trim()).filter(Boolean);
+          skillsArr.forEach(s => addSkillChip(s));
         }
 
-        showToast(`AI Extracted: ${res.title} (${res.skills.length} skills)`, 'success');
+        showToast(`AI OCR Extracted: ${res.title} (Confidence: ${res.confidence_score}%)`, 'success');
         triggerIntegrityCheck();
       }
     }
@@ -238,13 +239,23 @@
           file_path: document.getElementById('certFileInput').files.length > 0 ? 'cert.pdf' : ''
         };
 
-        const res = await API.post('/api/ml/integrity-score', payload);
+        const [res, dup] = await Promise.all([
+          API.post('/api/ml/integrity-score', payload),
+          API.post('/api/ml/check-duplicate', payload)
+        ]);
+
         if (res) {
           renderIntegrityGauge('liveGaugeContainer', res.overall_score, res.risk_level, res.risk_color);
           renderDimensionBars('liveDimensionsContainer', res.dimensions);
-          document.getElementById('liveRecommendationBox').innerHTML = `<strong>AI Assessment:</strong> ${escapeHtml(res.recommendation)}`;
+          
+          let alertHtml = '';
+          if (dup && dup.is_duplicate) {
+            alertHtml = `<div style="padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; color:#991b1b; font-size:0.8rem; margin-bottom:8px;">⚠️ <strong>Duplicate Anomaly Detected:</strong> ${escapeHtml(dup.reason)}</div>`;
+          }
+
+          document.getElementById('liveRecommendationBox').innerHTML = alertHtml + `<strong>AI Assessment:</strong> ${res.risk_level} Risk Level (${res.overall_score}/100)`;
         }
-      }, 400);
+      }, 350);
     }
 
     async function submitCertificate(e) {

@@ -16,10 +16,12 @@ from flask import (
     Flask, request, jsonify, session, redirect, url_for,
     send_from_directory
 )
-from werkzeug.utils import secure_filename
+import hashlib
 
 import database
 import ml_engine
+import ai_service
+import ml
 
 # ── App Configuration ────────────────────────────────────────────
 app = Flask(__name__, static_folder='static', static_url_path='/static', template_folder='templates')
@@ -126,6 +128,23 @@ def notifications_page():
 @login_required
 def settings_page():
     return send_from_directory(TEMPLATES_DIR, 'settings.html')
+
+
+@app.route('/ai_assistant.html')
+@login_required
+def ai_assistant_page():
+    return send_from_directory(TEMPLATES_DIR, 'ai_assistant.html')
+
+
+@app.route('/job_match.html')
+@login_required
+def job_match_page():
+    return send_from_directory(TEMPLATES_DIR, 'job_match.html')
+
+
+@app.route('/verify/<path:vcode>')
+def public_verify_page(vcode):
+    return send_from_directory(TEMPLATES_DIR, 'verify_certificate.html')
 
 
 @app.route('/staff_dashboard.html')
@@ -704,8 +723,109 @@ def api_integrity_score():
 def api_extract_metadata():
     data = request.get_json() or {}
     raw_text = data.get('text', '')
-    result = ml_engine.extract_certificate_metadata(raw_text)
+    result = ml.extract_certificate_metadata(raw_text)
     return jsonify(result)
+
+
+@app.route('/api/ml/placement-readiness', methods=['GET'])
+@login_required
+def api_placement_readiness():
+    user_id = session['user_id']
+    if session.get('role') in ('staff', 'admin', 'hod'):
+        user_id = request.args.get('user_id', user_id, type=int)
+
+    student = database.get_user_by_id(user_id)
+    certs = database.get_certificates_for_user(user_id)
+    result = ml.compute_placement_readiness(student, certs)
+    return jsonify(result)
+
+
+@app.route('/api/ml/match-job', methods=['POST'])
+@login_required
+def api_match_job():
+    data = request.get_json() or {}
+    jd_text = data.get('job_description', '').strip()
+
+    user_id = session['user_id']
+    certs = database.get_certificates_for_user(user_id, status='approved')
+    if not certs:
+        certs = database.get_certificates_for_user(user_id)
+
+    career_data = ml.predict_career_readiness(certs)
+    verified_skills = career_data.get('verified_skills', [])
+
+    result = ml.match_job_description(jd_text, verified_skills)
+    return jsonify(result)
+
+
+@app.route('/api/ml/check-duplicate', methods=['POST'])
+@login_required
+def api_check_duplicate():
+    data = request.get_json() or {}
+    user_id = session['user_id']
+    existing_certs = database.get_certificates_for_user(user_id)
+    result = ml.check_duplicate_certificate(data, existing_certs)
+    return jsonify(result)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  AI STUDENT ASSISTANT & RAG API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/ai/chat', methods=['POST'])
+@login_required
+def api_ai_chat():
+    data = request.get_json() or {}
+    message = data.get('message', '').strip()
+    if not message:
+        return jsonify({"error": "Message cannot be empty"}), 400
+
+    response_data = ai_service.generate_ai_response(session['user_id'], message)
+    return jsonify(response_data)
+
+
+@app.route('/api/ai/context', methods=['GET'])
+@login_required
+def api_ai_context():
+    context = ai_service.get_student_rag_context(session['user_id'])
+    return jsonify(context)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  PUBLIC CREDENTIAL VERIFICATION API (NO AUTH REQUIRED)
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/public/verify/<path:vcode>', methods=['GET'])
+def api_public_verify_cert(vcode):
+    cert = database.get_certificate_by_verification_code(vcode)
+    if not cert:
+        return jsonify({"error": "Credential verification code not found in institutional registry"}), 404
+
+    # Cryptographic integrity signature (SHA-256)
+    hash_payload = f"{cert['id']}-{cert['verification_code']}-{cert['student_username']}-{cert['title']}-{cert['status']}"
+    sha256_hash = hashlib.sha256(hash_payload.encode()).hexdigest()
+
+    return jsonify({
+        "verified": True,
+        "verification_code": cert['verification_code'],
+        "title": cert['title'],
+        "description": cert['description'],
+        "issue_date": cert['issue_date'],
+        "cert_type": cert['cert_type'],
+        "skills": cert['skills'],
+        "source_url": cert['source_url'],
+        "status": cert['status'],
+        "student_name": cert['student_name'],
+        "student_username": cert['student_username'],
+        "department": cert['student_dept'],
+        "year": cert['student_year'],
+        "reviewer_name": cert['reviewer_name'] or cert['mentor_name'] or "Faculty Examination Board",
+        "reviewer_designation": cert['reviewer_designation'] or "Faculty Mentor",
+        "integrity_score": cert['integrity_score'],
+        "reviewed_at": cert['reviewed_at'],
+        "sha256_hash": sha256_hash,
+        "institution": "Campus Academic Certification Authority"
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════

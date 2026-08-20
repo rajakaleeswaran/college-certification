@@ -162,6 +162,13 @@ def _patch_seed_mentors_and_years(conn):
         if mid:
             c.execute("UPDATE users SET year=?, mentor_id=? WHERE username=? AND (mentor_id IS NULL OR year IS NULL OR year=1)", (yr, mid, uname))
 
+    # Ensure all certificates have an institutional verification code
+    null_vcode_certs = c.execute("SELECT id FROM certificates WHERE verification_code IS NULL OR verification_code = ''").fetchall()
+    for row in null_vcode_certs:
+        cid = row[0]
+        code = f"CERT-2025-CSE-{8000 + cid}"
+        c.execute("UPDATE certificates SET verification_code=? WHERE id=?", (code, cid))
+
     conn.commit()
 
 
@@ -607,6 +614,25 @@ def get_certificate_by_id(cert_id):
            LEFT JOIN users m ON u.mentor_id = m.id
            WHERE c.id = ?""",
         (cert_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_certificate_by_verification_code(code):
+    """Public lookup for external credential validation by QR code or reference ID."""
+    conn = get_db()
+    row = conn.execute(
+        """SELECT c.*, u.full_name as student_name, u.username as student_username,
+                  u.department as student_dept, u.year as student_year,
+                  m.full_name as mentor_name,
+                  r.full_name as reviewer_name, r.designation as reviewer_designation
+           FROM certificates c
+           JOIN users u ON c.user_id = u.id
+           LEFT JOIN users m ON u.mentor_id = m.id
+           LEFT JOIN users r ON c.reviewer_id = r.id
+           WHERE c.verification_code = ?""",
+        (code.strip(),)
     ).fetchone()
     conn.close()
     return dict(row) if row else None

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Job Matcher & Placement Readiness — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">AI Job Description Matcher & Placement Readiness</h1>
+        <p class="portal-page-description">Paste any internship or company job description to compute your real-time skill alignment and interview readiness score.</p>
+      </div>
+      <div class="portal-page-actions">
+        <a href="/ai_assistant.html" class="portal-btn portal-btn--outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          Ask AI Copilot
+        </a>
+      </div>
+    </div>
+
+    <!-- Top Placement Readiness Overview Card -->
+    <div class="portal-card" style="margin-bottom: 24px;">
+      <div class="portal-card__header">
+        <div>
+          <div class="portal-card__title">Placement Readiness Index Breakdown</div>
+          <p style="font-size: 0.8rem; color: var(--portal-slate-500); margin-top: 2px;">Multi-metric evaluation based on verified credentials, technical breadth, and academic velocity.</p>
+        </div>
+        <span class="portal-badge portal-badge--brand" id="placementBadgeHeader">Calculating...</span>
+      </div>
+      <div class="portal-card__body">
+        <div class="portal-grid-4">
+          <div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--portal-brand-600);" id="placementBigScore">0%</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--portal-slate-700);">Overall Placement Score</div>
+            <div style="font-size: 0.775rem; color: var(--portal-slate-400); margin-top: 2px;" id="placementSubDomain">Domain: -</div>
+          </div>
+
+          <div style="grid-column: span 3;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 3px;">
+                  <span>Technical Skills Breadth (30%)</span>
+                  <span id="scoreDimTech">0 / 30</span>
+                </div>
+                <div style="height: 8px; background: var(--portal-slate-100); border-radius: 4px; overflow: hidden;">
+                  <div id="barDimTech" style="width: 0%; height: 100%; background: var(--portal-brand-600); transition: width 0.6s;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 3px;">
+                  <span>Verified Credentials & Integrity (25%)</span>
+                  <span id="scoreDimCerts">0 / 25</span>
+                </div>
+                <div style="height: 8px; background: var(--portal-slate-100); border-radius: 4px; overflow: hidden;">
+                  <div id="barDimCerts" style="width: 0%; height: 100%; background: #4f46e5; transition: width 0.6s;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 3px;">
+                  <span>Career Track Specialization (20%)</span>
+                  <span id="scoreDimDomain">0 / 20</span>
+                </div>
+                <div style="height: 8px; background: var(--portal-slate-100); border-radius: 4px; overflow: hidden;">
+                  <div id="barDimDomain" style="width: 0%; height: 100%; background: #10b981; transition: width 0.6s;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Matcher Interactive Section -->
+    <div class="portal-grid-2">
+      <!-- Left: Job Description Input -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Paste Job Description (JD)</div>
+          <button type="button" class="portal-btn portal-btn--outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="loadSampleJD()">
+            Load Sample JD
+          </button>
+        </div>
+        <div class="portal-card__body">
+          <form onsubmit="analyzeJobMatch(event)">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="jdInput">Role Requirements & Description</label>
+              <textarea id="jdInput" class="portal-form-textarea" rows="11" placeholder="Paste the job description from LinkedIn, Indeed, or campus placement drive..." required></textarea>
+            </div>
+            <button type="submit" class="portal-btn portal-btn--primary portal-btn--block" id="analyzeJdBtn">
+              🔍 Analyze Job Match & Extract Skill Gaps
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: AI Match Results -->
+      <div class="portal-card" id="matchResultsCard">
+        <div class="portal-card__header">
+          <div class="portal-card__title">AI Skill Match Analysis</div>
+          <span class="portal-badge portal-badge--neutral" id="matchLevelBadge">Awaiting Input</span>
+        </div>
+        <div class="portal-card__body" id="matchResultsBody">
+          <div style="text-align: center; padding: 48px 20px; color: var(--portal-slate-400);">
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
+            <div style="font-weight: 600; color: var(--portal-slate-700);">No job description analyzed yet</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">Paste a job description on the left or click "Load Sample JD" to see match analytics.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function initJobMatchPage() {
+      const user = await initPortal('/job_match.html');
+      if (!user) return;
+
+      const placement = await API.get('/api/ml/placement-readiness');
+      if (placement) {
+        renderPlacementReadiness(placement);
+      }
+    }
+
+    function renderPlacementReadiness(data) {
+      document.getElementById('placementBigScore').textContent = `${data.overall_score}%`;
+      document.getElementById('placementBadgeHeader').textContent = data.badge_label;
+      document.getElementById('placementSubDomain').textContent = `Target Domain: ${data.primary_domain} (${data.domain_match_pct}%)`;
+
+      const dims = data.dimensions || {};
+      if (dims.technical_breadth) {
+        document.getElementById('scoreDimTech').textContent = `${dims.technical_breadth.score} / 30`;
+        document.getElementById('barDimTech').style.width = `${dims.technical_breadth.pct}%`;
+      }
+      if (dims.verified_credentials) {
+        document.getElementById('scoreDimCerts').textContent = `${dims.verified_credentials.score} / 25`;
+        document.getElementById('barDimCerts').style.width = `${dims.verified_credentials.pct}%`;
+      }
+      if (dims.domain_mastery) {
+        document.getElementById('scoreDimDomain').textContent = `${dims.domain_mastery.score} / 20`;
+        document.getElementById('barDimDomain').style.width = `${dims.domain_mastery.pct}%`;
+      }
+    }
+
+    function loadSampleJD() {
+      document.getElementById('jdInput').value = `Full Stack Developer Intern / Junior Engineer
+We are seeking an enthusiastic developer with experience in React, Node.js, and modern JavaScript/TypeScript.
+Key Responsibilities:
+- Build responsive web applications using React, HTML5, CSS3, and RESTful APIs.
+- Design database schemas in SQL (PostgreSQL / MySQL) and write efficient queries.
+- Work with Docker containers and AWS cloud infrastructure for deployments.
+- Write unit tests, collaborate using Git/GitHub, and participate in code reviews.
+Requirements:
+- Strong knowledge of JavaScript, React.js, Express, and SQL databases.
+- Familiarity with Docker, Kubernetes, CI/CD, and AWS is a huge plus.`;
+      showToast('Sample Full-Stack JD loaded', 'success');
+    }
+
+    async function analyzeJobMatch(e) {
+      e.preventDefault();
+      const text = document.getElementById('jdInput').value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('analyzeJdBtn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing skills with NLP...';
+
+      const res = await API.post('/api/ml/match-job', { job_description: text });
+      btn.disabled = false;
+      btn.textContent = '🔍 Analyze Job Match & Extract Skill Gaps';
+
+      if (res) {
+        renderMatchResults(res);
+      } else {
+        showToast('Failed to analyze job match', 'error');
+      }
+    }
+
+    function renderMatchResults(res) {
+      document.getElementById('matchLevelBadge').textContent = res.match_level;
+      document.getElementById('matchLevelBadge').className = `portal-badge portal-badge--${res.match_percentage >= 70 ? 'success' : res.match_percentage >= 50 ? 'brand' : 'warning'}`;
+
+      const body = document.getElementById('matchResultsBody');
+      body.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--portal-slate-50); padding: 18px; border-radius: var(--portal-radius-lg); margin-bottom: 20px; border: 1px solid var(--portal-slate-200);">
+          <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400);">Match Alignment</div>
+            <div style="font-size: 2rem; font-weight: 800; color: ${res.match_percentage >= 70 ? '#10b981' : '#0d9488'};">${res.match_percentage}%</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--portal-slate-800);">${res.matched_count} / ${res.required_skills_count} Required Skills Met</div>
+            <div style="font-size: 0.775rem; color: var(--portal-slate-500); margin-top: 2px;">Verified against your portal portfolio</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #065f46; margin-bottom: 8px;">✓ Verified Skills Matched (${res.matched_count})</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${res.matched_skills.length > 0
+              ? res.matched_skills.map(s => `<span class="portal-badge portal-badge--success" style="font-size:0.8rem;">✓ ${escapeHtml(s)}</span>`).join('')
+              : '<span style="font-size:0.8rem; color:var(--portal-slate-400);">No direct skill match</span>'}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #991b1b; margin-bottom: 8px;">⚠️ Missing Required Skills to Learn (${res.missing_count})</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${res.missing_skills.length > 0
+              ? res.missing_skills.map(s => `<span class="portal-badge portal-badge--danger" style="font-size:0.8rem;">+ ${escapeHtml(s)}</span>`).join('')
+              : '<span style="font-size:0.8rem; color:#10b981; font-weight:600;">✓ You meet 100% of required technical skills!</span>'}
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; padding: 14px 16px; border-radius: 8px; border-left: 4px solid var(--portal-brand-600); font-size: 0.85rem; color: var(--portal-slate-700); line-height: 1.5;">
+          <strong>AI Recommendation:</strong> ${escapeHtml(res.recommendation)}
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', initJobMatchPage);
+  </script>
+</body>
+</html>

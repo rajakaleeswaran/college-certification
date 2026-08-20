@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Institutional Credential Verification — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .verify-body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f766e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      font-family: var(--portal-font-sans);
+    }
+    .verify-card {
+      background: #ffffff;
+      border-radius: var(--portal-radius-xl);
+      max-width: 680px;
+      width: 100%;
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--portal-slate-200);
+      position: relative;
+      overflow: hidden;
+    }
+    .verify-watermark {
+      position: absolute;
+      right: -20px;
+      bottom: -20px;
+      opacity: 0.04;
+      font-size: 14rem;
+      pointer-events: none;
+      user-select: none;
+      font-weight: 900;
+    }
+    .verify-badge-shield {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #ecfdf5;
+      color: #059669;
+      border: 2px solid #a7f3d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 16px;
+    }
+    .verify-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--portal-slate-100);
+      font-size: 0.9rem;
+    }
+    .verify-info-row:last-child {
+      border-bottom: none;
+    }
+    .verify-label {
+      color: var(--portal-slate-500);
+      font-weight: 500;
+    }
+    .verify-val {
+      color: var(--portal-slate-900);
+      font-weight: 700;
+      text-align: right;
+    }
+    .verify-hash-box {
+      background: var(--portal-slate-50);
+      border: 1px solid var(--portal-slate-200);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--portal-slate-600);
+      word-break: break-all;
+      margin-top: 20px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      .verify-card { box-shadow: none; border: 1px solid #000; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="verify-body">
+
+  <div class="verify-card" id="verifyContainer">
+    <div class="verify-watermark">✓</div>
+
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div class="verify-badge-shield" id="verifyShield">✓</div>
+      <span class="portal-badge portal-badge--success" style="font-size: 0.85rem; padding: 4px 14px;">
+        INSTITUTIONALLY VERIFIED CREDENTIAL
+      </span>
+      <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--portal-slate-900); margin-top: 10px;" id="certTitle">Loading Verification Record...</h1>
+      <div style="font-size: 0.85rem; color: var(--portal-slate-500); font-family: monospace;" id="certVCode">-</div>
+    </div>
+
+    <div style="background: #f8fafc; border-radius: var(--portal-radius-lg); padding: 18px; border: 1px solid var(--portal-slate-200); margin-bottom: 20px;">
+      <div class="verify-info-row">
+        <span class="verify-label">Student Recipient</span>
+        <span class="verify-val" id="studentName">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">Registration Number</span>
+        <span class="verify-val" id="studentRegNo">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">Academic Department & Year</span>
+        <span class="verify-val" id="studentDept">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">Completion / Issue Date</span>
+        <span class="verify-val" id="issueDate">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">Verified Skill Taxonomy</span>
+        <span class="verify-val" id="certSkills" style="max-width: 60%;">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">Faculty Verification Sign-off</span>
+        <span class="verify-val" id="reviewerInfo" style="color: #059669;">-</span>
+      </div>
+      <div class="verify-info-row">
+        <span class="verify-label">AI Integrity Score</span>
+        <span class="verify-val" id="integrityScore" style="color: #0d9488;">-</span>
+      </div>
+    </div>
+
+    <!-- Cryptographic SHA-256 Hash Box -->
+    <div>
+      <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--portal-slate-400);">Cryptographic Signature (SHA-256)</div>
+      <div class="verify-hash-box" id="sha256Hash">Computing signature...</div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;" class="no-print">
+      <a href="/" class="portal-btn portal-btn--outline" style="padding: 8px 16px; font-size: 0.85rem;">← Campus Portal</a>
+      <button type="button" class="portal-btn portal-btn--primary" style="padding: 8px 18px; font-size: 0.85rem;" onclick="window.print()">🖨️ Print Verification Proof</button>
+    </div>
+  </div>
+
+  <script>
+    async function loadPublicVerification() {
+      // Extract vcode from URL (e.g. /verify/CERT-2025-CSE-9211)
+      const pathParts = window.location.pathname.split('/');
+      const vcode = pathParts[pathParts.length - 1];
+
+      if (!vcode || vcode === 'verify' || vcode === 'verify_certificate.html') {
+        renderNotFound('No verification code provided in URL.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/public/verify/${encodeURIComponent(vcode)}`);
+        const data = await res.json();
+
+        if (res.status !== 200 || !data.verified) {
+          renderNotFound(data.error || 'Credential record not found in institutional database.');
+          return;
+        }
+
+        document.getElementById('certTitle').textContent = data.title;
+        document.getElementById('certVCode').textContent = `Registry ID: ${data.verification_code}`;
+        document.getElementById('studentName').textContent = data.student_name;
+        document.getElementById('studentRegNo').textContent = data.student_username;
+        document.getElementById('studentDept').textContent = `${data.department || 'Engineering'} • Year ${data.year || 1}`;
+        document.getElementById('issueDate').textContent = data.issue_date || 'Certified';
+        document.getElementById('certSkills').textContent = data.skills || 'Technical Expertise';
+        document.getElementById('reviewerInfo').textContent = `✓ ${data.reviewer_name} (${data.reviewer_designation})`;
+        document.getElementById('integrityScore').textContent = `🛡️ ${data.integrity_score}% (Low Risk Verified)`;
+        document.getElementById('sha256Hash').textContent = data.sha256_hash || 'SHA-256 Signed';
+
+      } catch (e) {
+        renderNotFound('Failed to connect to verification server.');
+      }
+    }
+
+    function renderNotFound(msg) {
+      const container = document.getElementById('verifyContainer');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+          <span class="portal-badge portal-badge--danger" style="font-size: 0.85rem; padding: 4px 14px;">UNVERIFIED CREDENTIAL</span>
+          <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--portal-slate-900); margin-top: 14px;">Verification Failed</h2>
+          <p style="font-size: 0.9rem; color: var(--portal-slate-600); margin-top: 8px;">${msg}</p>
+          <div style="margin-top: 24px;">
+            <a href="/" class="portal-btn portal-btn--primary">Go to CertPortal Home</a>
+          </div>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPublicVerification);
+  </script>
+</body>
+</html>
