@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Catalog — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Institutional Certificate Records</h1>
+        <p class="portal-page-description">Search, audit, and generate shareable digital verification badges for your credentials.</p>
+      </div>
+      <div class="portal-page-actions">
+        <a href="/add_certificate.html" class="portal-btn portal-btn--primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Upload New Certificate
+        </a>
+      </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="portal-toolbar">
+      <div class="portal-search-box">
+        <span class="portal-search-box__icon">🔍</span>
+        <input type="text" id="catalogSearchInput" class="portal-search-box__input" placeholder="Search by title, skill, or keyword..." oninput="applyCatalogFilters()">
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="statusFilterSelect" class="portal-form-select" style="width: auto;" onchange="applyCatalogFilters()">
+          <option value="">All Review Statuses</option>
+          <option value="approved">Approved & Verified</option>
+          <option value="pending">Under Review</option>
+          <option value="rejected">Action Required</option>
+        </select>
+
+        <select id="disciplineFilterSelect" class="portal-form-select" style="width: auto;" onchange="applyCatalogFilters()">
+          <option value="">All Disciplines</option>
+          <option value="Technical">Technical</option>
+          <option value="Cloud">Cloud</option>
+          <option value="AI/ML">AI / ML</option>
+          <option value="Security">Security</option>
+          <option value="DevOps">DevOps</option>
+          <option value="Design">Design</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="portal-card">
+      <div class="portal-table-wrapper">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th class="portal-table__th">#</th>
+              <th class="portal-table__th">Certificate Title</th>
+              <th class="portal-table__th">Discipline</th>
+              <th class="portal-table__th">Issue Date</th>
+              <th class="portal-table__th">Review Status</th>
+              <th class="portal-table__th">AI Integrity</th>
+              <th class="portal-table__th">Competency Tags</th>
+              <th class="portal-table__th" style="text-align: right;">Verification Actions</th>
+            </tr>
+          </thead>
+          <tbody id="catalogTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let rawRecords = [];
+
+    async function loadCatalog() {
+      const user = await initPortal('/certificates.html');
+      if (!user) return;
+
+      rawRecords = await API.get('/api/certificates') || [];
+      applyCatalogFilters();
+    }
+
+    function applyCatalogFilters() {
+      const query = document.getElementById('catalogSearchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilterSelect').value;
+      const discipline = document.getElementById('disciplineFilterSelect').value;
+
+      const filtered = rawRecords.filter(c => {
+        if (status && c.status !== status) return false;
+        if (discipline && c.cert_type !== discipline) return false;
+        if (query) {
+          const haystack = `${c.title} ${c.skills} ${c.cert_type} ${c.description} ${c.verification_code}`.toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      renderCatalogTable(filtered);
+    }
+
+    function renderCatalogTable(records) {
+      const tbody = document.getElementById('catalogTableBody');
+
+      if (records.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="portal-table__td" style="text-align:center; padding:48px 24px;">
+              <div class="portal-empty-state">
+                <div class="portal-empty-state__icon">📭</div>
+                <div class="portal-empty-state__title">No matching records found</div>
+                <div class="portal-empty-state__description">Try adjusting your filters or search keywords.</div>
+              </div>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map((c, idx) => `
+        <tr class="portal-table__tr">
+          <td class="portal-table__td" style="color:var(--portal-slate-400); font-weight:500;">${idx + 1}</td>
+          <td class="portal-table__td">
+            <div style="font-weight:600; color:var(--portal-slate-900);">${escapeHtml(c.title)}</div>
+            ${c.verification_code ? `<div style="font-family:var(--portal-font-mono); font-size:0.725rem; color:var(--portal-brand-600);">${escapeHtml(c.verification_code)}</div>` : ''}
+          </td>
+          <td class="portal-table__td"><span class="portal-badge portal-badge--info">${escapeHtml(c.cert_type || 'General')}</span></td>
+          <td class="portal-table__td">${formatDate(c.issue_date)}</td>
+          <td class="portal-table__td">${getStatusBadge(c.status)}</td>
+          <td class="portal-table__td">${getIntegrityRiskBadge(c.integrity_score)}</td>
+          <td class="portal-table__td">
+            <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:200px;">
+              ${(c.skills || '').split(',').filter(s => s.trim()).slice(0, 3).map(s => `<span class="portal-tag-chip" style="font-size:0.7rem; padding:2px 8px;">${escapeHtml(s.trim())}</span>`).join('')}
+            </div>
+          </td>
+          <td class="portal-table__td" style="text-align: right;">
+            <div style="display:flex; gap:6px; justify-content:flex-end;">
+              <button class="portal-btn portal-btn--outline portal-btn--sm" onclick="viewDigitalBadge(${c.id})">Digital Badge</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function viewDigitalBadge(certId) {
+      const cert = await API.get(`/api/certificates/${certId}`);
+      if (!cert) return;
+
+      const vcode = cert.verification_code || `CERT-2025-V${cert.id}99`;
+
+      openPortalModal(
+        `Digital Credential Badge`,
+        `<div class="credential-badge-card" style="border:1.5px solid var(--portal-brand-500); box-shadow:var(--portal-shadow-md); margin-bottom:16px;">
+           <div class="credential-badge-card__visual">
+             <div class="credential-badge-card__vcode">INSTITUTIONAL ID: ${vcode}</div>
+             <div class="credential-badge-card__icon">🎓</div>
+           </div>
+           <div class="credential-badge-card__content">
+             <h3 class="credential-badge-card__title">${escapeHtml(cert.title)}</h3>
+             <div class="credential-badge-card__meta">Issued to: <strong>${escapeHtml(cert.student_name || 'Student')}</strong> • ${formatDate(cert.issue_date)}</div>
+             <div style="display:flex; gap:8px; margin-bottom:12px;">
+               ${getStatusBadge(cert.status)}
+               ${getIntegrityRiskBadge(cert.integrity_score)}
+             </div>
+             <div style="padding:10px; background:var(--portal-slate-50); border:1px solid var(--portal-slate-200); border-radius:var(--portal-radius-md); font-size:0.775rem; color:var(--portal-slate-600); line-height:1.4;">
+               Cryptographic Verification Hash: <code>${btoa(vcode + cert.title).substring(0, 24)}...</code>
+             </div>
+           </div>
+         </div>
+         <p style="font-size:0.8rem; color:var(--portal-slate-500); text-align:center;">This official digital badge can be referenced for campus placement interviews and employer verification.</p>`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Done</button>`
+      );
+    }
+
+    loadCatalog();
+  </script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Broadcast & Notification Dispatch Center — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Faculty Broadcast & Notification Dispatcher</h1>
+        <p class="portal-page-description">Draft institutional notices, target academic cohorts or individual students, and review broadcast reach logs.</p>
+      </div>
+    </div>
+
+    <!-- Main 2-Column Dispatch Station -->
+    <div class="portal-grid-sidebar">
+      <!-- Left: Drafting & Targeting Form -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Draft Campus Announcement</div>
+          <span class="portal-badge portal-badge--info">Broadcast Console</span>
+        </div>
+        <div class="portal-card__body">
+
+          <!-- Preset Templates Selector -->
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 0.775rem; font-weight: 600; color: var(--portal-slate-500); text-transform: uppercase; margin-bottom: 8px;">
+              Quick Preset Announcement Templates:
+            </div>
+            <div class="broadcast-template-strip">
+              <span class="broadcast-template-pill" onclick="applyTemplate('deadline')">📌 Submission Deadline</span>
+              <span class="broadcast-template-pill" onclick="applyTemplate('placement')">💼 Placement Drive</span>
+              <span class="broadcast-template-pill" onclick="applyTemplate('workshop')">🤖 AI Workshop</span>
+              <span class="broadcast-template-pill" onclick="applyTemplate('policy')">📋 Verification Policy</span>
+              <span class="broadcast-template-pill" onclick="applyTemplate('maintenance')">🛠️ Maintenance Alert</span>
+            </div>
+          </div>
+
+          <form id="broadcastForm" onsubmit="sendBroadcastNotification(event)">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="broadcastTitle">Announcement Headline *</label>
+              <input type="text" id="broadcastTitle" class="portal-form-input" placeholder="e.g. Upload April 2025 Certifications for Institutional Audit" required oninput="updateLivePreview()">
+            </div>
+
+            <div class="portal-form-grid-2">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="broadcastCategory">Category</label>
+                <select id="broadcastCategory" class="portal-form-select" onchange="updateLivePreview()">
+                  <option value="deadline">Submission Deadline</option>
+                  <option value="event">Campus / Tech Event</option>
+                  <option value="policy">Policy / Guideline Update</option>
+                  <option value="reminder">Reminder Notice</option>
+                  <option value="wishes">Greetings / Congratulations</option>
+                  <option value="general">General Notice</option>
+                </select>
+              </div>
+
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="broadcastPriority">Priority Level</label>
+                <select id="broadcastPriority" class="portal-form-select" onchange="updateLivePreview()">
+                  <option value="normal">Normal Priority</option>
+                  <option value="high">High / Urgent (Pinned)</option>
+                  <option value="low">Low Priority</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Audience Targeting -->
+            <div class="portal-form-grid-2">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="broadcastTargetRole">Audience Role</label>
+                <select id="broadcastTargetRole" class="portal-form-select" onchange="updateLivePreview()">
+                  <option value="student">Students Only</option>
+                  <option value="all">All Campus Members</option>
+                  <option value="staff">Faculty / Reviewers Only</option>
+                </select>
+              </div>
+
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="broadcastTargetDept">Department Filter</label>
+                <select id="broadcastTargetDept" class="portal-form-select" onchange="updateLivePreview()">
+                  <option value="All">All Departments</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Optional Individual Student Selector -->
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="broadcastTargetStudent">Target Specific Student (Optional)</label>
+              <select id="broadcastTargetStudent" class="portal-form-select" onchange="updateLivePreview()">
+                <option value="">None (Broadcast to selected cohort)</option>
+              </select>
+              <div class="portal-form-hint">Select a specific student only if this announcement is for an individual student audit.</div>
+            </div>
+
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="broadcastBody">Announcement Content *</label>
+              <textarea id="broadcastBody" class="portal-form-textarea" style="min-height: 110px;" placeholder="Write the announcement text here..." required oninput="updateLivePreview()"></textarea>
+            </div>
+
+            <button type="submit" class="portal-btn portal-btn--primary portal-btn--block portal-btn--lg" id="dispatchBroadcastBtn">
+              <span id="dispatchBroadcastBtnText">🚀 Dispatch Announcement</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: Live Inbox Preview -->
+      <div>
+        <div class="portal-card" style="position: sticky; top: 140px;">
+          <div class="portal-card__header">
+            <div class="portal-card__title">Student Inbox Preview</div>
+            <span class="portal-badge portal-badge--neutral">Real-Time Simulation</span>
+          </div>
+          <div class="portal-card__body">
+            <p style="font-size: 0.775rem; color: var(--portal-slate-500); margin-bottom: 12px;">This is how recipients will see the announcement in their inbox:</p>
+            <div class="broadcast-live-preview" id="liveBroadcastPreviewCard">
+              <div class="broadcast-live-preview__meta">
+                <span id="prevCategoryBadge" class="portal-badge portal-badge--info">DEADLINE</span>
+                <span id="prevTimestamp">Just now</span>
+              </div>
+              <div class="broadcast-live-preview__title" id="prevTitleText">Announcement Headline</div>
+              <div class="broadcast-live-preview__body" id="prevBodyText">Announcement content will display here as you type...</div>
+              <div style="font-size: 0.75rem; color: var(--portal-slate-400); margin-top: 12px; border-top: 1px solid var(--portal-slate-100); padding-top: 8px;">
+                Audience: <strong id="prevAudienceLabel">Students Only (All Depts)</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispatch History Card -->
+    <div class="portal-card" style="margin-top: 24px;">
+      <div class="portal-card__header">
+        <div class="portal-card__title">Recent Dispatch History & Logs</div>
+        <span class="portal-badge portal-badge--neutral">Institutional Log</span>
+      </div>
+      <div class="portal-table-wrapper">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th class="portal-table__th">Headline</th>
+              <th class="portal-table__th">Category</th>
+              <th class="portal-table__th">Target Audience</th>
+              <th class="portal-table__th">Priority</th>
+              <th class="portal-table__th">Dispatched Time</th>
+              <th class="portal-table__th">Author</th>
+            </tr>
+          </thead>
+          <tbody id="broadcastHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let departmentsList = [];
+    let studentsList = [];
+
+    const TEMPLATES = {
+      deadline: {
+        title: "Submit Professional Certifications for Semester Audit",
+        category: "deadline",
+        priority: "high",
+        body: "All students are requested to upload and verify their semester certifications before the upcoming review deadline. Late submissions will not be credited in the placement index."
+      },
+      placement: {
+        title: "Campus Placement Technical Screening Drive Announcement",
+        category: "event",
+        priority: "high",
+        body: "Top tech recruiters will begin reviewing verified student certification portfolios starting next week. Ensure all valid cloud and software credentials are submitted for verification."
+      },
+      workshop: {
+        title: "Hands-on Applied Deep Learning & NLP Masterclass",
+        category: "event",
+        priority: "normal",
+        body: "Department of CSE is hosting a 3-day technical masterclass on Hugging Face Transformers and Neural Networks. Register via portal before seats are filled."
+      },
+      policy: {
+        title: "Updated Credential Verification & Transcript Standards",
+        category: "policy",
+        priority: "normal",
+        body: "Certifications uploaded must contain an official verification URL or verifiable certificate code from authorized educational platforms."
+      },
+      maintenance: {
+        title: "Scheduled Campus Portal Maintenance Window",
+        category: "reminder",
+        priority: "low",
+        body: "The certification repository will undergo database optimization this weekend from 12:00 AM to 02:00 AM IST. Portal access will be temporarily paused."
+      }
+    };
+
+    async function initBroadcastCenter() {
+      const user = await initPortal('/staff_notifications.html');
+      if (!user) return;
+
+      const [depts, students, history] = await Promise.all([
+        API.get('/api/departments/list'),
+        API.get('/api/students/list'),
+        API.get('/api/notifications/broadcast-history')
+      ]);
+
+      if (depts) {
+        departmentsList = depts;
+        const deptSelect = document.getElementById('broadcastTargetDept');
+        depts.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          deptSelect.appendChild(opt);
+        });
+      }
+
+      if (students) {
+        studentsList = students;
+        const studentSelect = document.getElementById('broadcastTargetStudent');
+        students.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${s.full_name} (${s.username} - ${s.department || 'Student'})`;
+          studentSelect.appendChild(opt);
+        });
+      }
+
+      renderBroadcastHistory(history || []);
+      updateLivePreview();
+    }
+
+    function applyTemplate(key) {
+      const t = TEMPLATES[key];
+      if (!t) return;
+      document.getElementById('broadcastTitle').value = t.title;
+      document.getElementById('broadcastCategory').value = t.category;
+      document.getElementById('broadcastPriority').value = t.priority;
+      document.getElementById('broadcastBody').value = t.body;
+      updateLivePreview();
+      showToast(`Template applied: ${t.title}`, 'info');
+    }
+
+    function updateLivePreview() {
+      const title = document.getElementById('broadcastTitle').value.trim() || 'Announcement Headline';
+      const body = document.getElementById('broadcastBody').value.trim() || 'Announcement content will display here as you type...';
+      const cat = document.getElementById('broadcastCategory').value.toUpperCase();
+      const role = document.getElementById('broadcastTargetRole').value;
+      const dept = document.getElementById('broadcastTargetDept').value;
+      const studentId = document.getElementById('broadcastTargetStudent').value;
+
+      document.getElementById('prevTitleText').textContent = title;
+      document.getElementById('prevBodyText').textContent = body;
+      document.getElementById('prevCategoryBadge').textContent = cat;
+
+      let audienceText = `${role === 'student' ? 'Students Only' : role === 'staff' ? 'Faculty Only' : 'All Members'} (${dept})`;
+      if (studentId) {
+        const matched = studentsList.find(s => s.id == studentId);
+        audienceText = `Individual: ${matched ? matched.full_name : 'Selected Student'}`;
+      }
+      document.getElementById('prevAudienceLabel').textContent = audienceText;
+    }
+
+    function renderBroadcastHistory(logs) {
+      const tbody = document.getElementById('broadcastHistoryBody');
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="portal-table__td" style="text-align:center; padding:32px; color:var(--portal-slate-400);">No prior broadcast logs on record.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(n => `
+        <tr class="portal-table__tr">
+          <td class="portal-table__td" style="font-weight:600; color:var(--portal-slate-900);">${escapeHtml(n.title)}</td>
+          <td class="portal-table__td"><span class="portal-badge portal-badge--info">${escapeHtml(n.category || 'General')}</span></td>
+          <td class="portal-table__td">${escapeHtml(n.target_role || 'All')} (${escapeHtml(n.target_department || 'All')})</td>
+          <td class="portal-table__td"><span class="portal-badge ${n.priority === 'high' ? 'portal-badge--rejected' : 'portal-badge--neutral'}">${escapeHtml(n.priority || 'Normal')}</span></td>
+          <td class="portal-table__td">${formatDate(n.created_at)}</td>
+          <td class="portal-table__td">${escapeHtml(n.author_name || 'Faculty')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function sendBroadcastNotification(e) {
+      e.preventDefault();
+      const btn = document.getElementById('dispatchBroadcastBtn');
+      const btnText = document.getElementById('dispatchBroadcastBtnText');
+
+      btn.disabled = true;
+      btnText.textContent = 'Dispatching to cohort...';
+
+      const payload = {
+        title: document.getElementById('broadcastTitle').value.trim(),
+        body: document.getElementById('broadcastBody').value.trim(),
+        category: document.getElementById('broadcastCategory').value,
+        priority: document.getElementById('broadcastPriority').value,
+        target_role: document.getElementById('broadcastTargetRole').value,
+        target_department: document.getElementById('broadcastTargetDept').value,
+        target_user_id: document.getElementById('broadcastTargetStudent').value || null
+      };
+
+      const res = await API.post('/api/notifications/broadcast', payload);
+      if (res && res.success) {
+        showToast('Announcement broadcasted successfully!', 'success');
+        document.getElementById('broadcastForm').reset();
+        updateLivePreview();
+
+        const history = await API.get('/api/notifications/broadcast-history');
+        renderBroadcastHistory(history || []);
+      } else {
+        showToast(res?.error || 'Broadcast failed', 'error');
+      }
+
+      btn.disabled = false;
+      btnText.textContent = '🚀 Dispatch Announcement';
+    }
+
+    initBroadcastCenter();
+  </script>
+</body>
+</html>

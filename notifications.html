@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Institutional Announcements & Inbox — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Institutional Announcements & Inbox</h1>
+        <p class="portal-page-description" id="inboxSubtitle">Campus notifications, verification audit logs, and deadline bulletins.</p>
+      </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="portal-toolbar">
+      <div class="portal-search-box">
+        <span class="portal-search-box__icon">🔍</span>
+        <input type="text" id="notifSearch" class="portal-search-box__input" placeholder="Search announcements..." oninput="filterInbox()">
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="notifCategorySelect" class="portal-form-select" style="width: auto;" onchange="filterInbox()">
+          <option value="">All Categories</option>
+          <option value="deadline">Submission Deadlines</option>
+          <option value="review">Review Audits</option>
+          <option value="event">Technical Events</option>
+          <option value="policy">Policy Updates</option>
+          <option value="reminder">Reminders</option>
+          <option value="wishes">Institutional Greetings</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Notification Feed Card -->
+    <div class="portal-card">
+      <div class="portal-card__body" id="inboxFeed"></div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let rawNotifications = [];
+
+    async function loadInbox() {
+      const user = await initPortal('/notifications.html');
+      if (!user) return;
+
+      rawNotifications = await API.get('/api/notifications') || [];
+      document.getElementById('inboxSubtitle').textContent = `${rawNotifications.length} institutional notification${rawNotifications.length !== 1 ? 's' : ''} on record.`;
+      filterInbox();
+    }
+
+    function filterInbox() {
+      const query = document.getElementById('notifSearch').value.toLowerCase();
+      const cat = document.getElementById('notifCategorySelect').value;
+
+      const filtered = rawNotifications.filter(n => {
+        if (cat && n.category !== cat) return false;
+        if (query) {
+          const haystack = `${n.title} ${n.body} ${n.category}`.toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      renderInboxFeed(filtered);
+    }
+
+    function renderInboxFeed(list) {
+      const container = document.getElementById('inboxFeed');
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="portal-empty-state">
+            <div class="portal-empty-state__icon">🔕</div>
+            <div class="portal-empty-state__title">No announcements in this view</div>
+            <div class="portal-empty-state__description">You are all caught up with your institutional updates.</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(n => {
+        const isRead = n.is_read == 1;
+        let borderHighlight = 'var(--portal-slate-300)';
+        if (n.category === 'deadline' || n.priority === 'high') borderHighlight = 'var(--portal-danger-icon)';
+        else if (n.category === 'review') borderHighlight = 'var(--portal-success-icon)';
+        else if (n.category === 'event') borderHighlight = 'var(--portal-info-icon)';
+
+        return `
+          <div style="padding: 16px 18px; border-left: 3px solid ${borderHighlight}; border-bottom: 1px solid var(--portal-slate-100); background: ${isRead ? '#ffffff' : 'var(--portal-slate-50)'}; transition: var(--portal-transition);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px;">
+              <h3 style="font-size: 0.95rem; font-weight: ${isRead ? '600' : '700'}; color: var(--portal-slate-900);">
+                ${escapeHtml(n.title)}
+              </h3>
+              <span class="portal-badge portal-badge--info" style="font-size: 0.7rem; text-transform: uppercase;">${escapeHtml(n.category || 'General')}</span>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--portal-slate-600); line-height: 1.5; margin-bottom: 10px;">
+              ${escapeHtml(n.body)}
+            </p>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.775rem; color: var(--portal-slate-400);">
+              <span>Posted: ${formatDate(n.created_at)} ${n.author_name ? `• by ${escapeHtml(n.author_name)}` : ''}</span>
+              ${!isRead ? `<button class="portal-btn portal-btn--outline portal-btn--sm" onclick="markRead(${n.id})">Mark as Read</button>` : '<span style="color:var(--portal-success-text); font-weight:600;">✓ Read</span>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function markRead(id) {
+      await API.put(`/api/notifications/${id}/read`);
+      const item = rawNotifications.find(n => n.id === id);
+      if (item) item.is_read = 1;
+      filterInbox();
+      showToast('Notification marked as read', 'success');
+    }
+
+    loadInbox();
+  </script>
+</body>
+</html>

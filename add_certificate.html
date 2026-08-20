@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Credential — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Upload Credential & Certificate</h1>
+        <p class="portal-page-description">Submit professional certifications for institutional verification and placement cataloging.</p>
+      </div>
+    </div>
+
+    <div class="portal-grid-sidebar">
+      <!-- Left: Upload Form -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Certificate Details & Syllabus</div>
+          <span class="portal-badge portal-badge--info">Official Record</span>
+        </div>
+        <div class="portal-card__body">
+
+          <!-- AI OCR / Metadata Auto-Extractor Simulator Box -->
+          <div class="ocr-scanner-box">
+            <div class="ocr-scanner-box__header">
+              <div class="ocr-scanner-box__title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                AI Smart Auto-Extractor
+              </div>
+              <button type="button" class="portal-btn portal-btn--outline portal-btn--sm" onclick="runAutoExtractor()">
+                Extract Metadata
+              </button>
+            </div>
+            <p style="font-size: 0.775rem; color: var(--portal-slate-500); margin-bottom: 8px;">Paste text from your certificate or credential email below to auto-populate the form:</p>
+            <textarea id="rawOcrText" class="portal-form-textarea" style="min-height: 60px; font-size: 0.8rem;" placeholder="e.g. AWS Certified Solutions Architect - Associate. Issued April 2025. Demonstrates skills in EC2, S3, IAM, Cloud Security..."></textarea>
+          </div>
+
+          <form id="submissionForm" onsubmit="submitCertificate(event)">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="certTitle">Certificate / Course Title *</label>
+              <input type="text" id="certTitle" class="portal-form-input" placeholder="e.g. AWS Solutions Architect Associate" required oninput="triggerIntegrityCheck()">
+            </div>
+
+            <div class="portal-form-grid-2">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="issueDate">Issuance Date *</label>
+                <input type="date" id="issueDate" class="portal-form-input" required oninput="triggerIntegrityCheck()">
+              </div>
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="certType">Technical Discipline</label>
+                <select id="certType" class="portal-form-select" onchange="triggerIntegrityCheck()">
+                  <option value="Technical">Technical / Software</option>
+                  <option value="Cloud">Cloud Architecture</option>
+                  <option value="AI/ML">Artificial Intelligence / Data</option>
+                  <option value="Security">Cybersecurity</option>
+                  <option value="DevOps">DevOps & SRE</option>
+                  <option value="Design">UI/UX & Design</option>
+                  <option value="Management">Engineering Management</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="sourceUrl">Online Verification URL</label>
+              <input type="url" id="sourceUrl" class="portal-form-input" placeholder="https://coursera.org/verify/... or https://aws.amazon.com/verify/..." oninput="triggerIntegrityCheck()">
+              <div class="portal-form-hint">Official registry verification URLs substantially increase the AI Integrity Confidence Index.</div>
+            </div>
+
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="description">Curriculum & Competencies Summary</label>
+              <textarea id="description" class="portal-form-textarea" placeholder="Briefly detail course topics, capstone projects completed, and practical evaluations..." oninput="triggerIntegrityCheck()"></textarea>
+            </div>
+
+            <!-- Skills Tag Input -->
+            <div class="portal-form-group">
+              <label class="portal-form-label">Competencies & Skills Acquired</label>
+              <div class="portal-tags-container" id="skillsContainer" onclick="document.getElementById('skillInputField').focus()">
+                <input type="text" id="skillInputField" class="portal-tags-input-field" placeholder="Type skill and press Enter...">
+              </div>
+              <input type="hidden" id="skillsHiddenInput" name="skills">
+              <div class="portal-form-hint">Press Enter or comma to tag skills (e.g. React, Python, Docker, AWS).</div>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div class="portal-form-group">
+              <label class="portal-form-label">Certificate Document (PDF / Scan)</label>
+              <div class="portal-dropzone" id="certDropzone">
+                <div class="portal-dropzone__icon">📄</div>
+                <div class="portal-dropzone__primary-text">Click to browse or drag certificate file here</div>
+                <div class="portal-dropzone__sub-text">Supported formats: PDF, PNG, JPG (Max 16MB)</div>
+              </div>
+              <input type="file" id="certFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display: none;">
+              <div id="fileSelectedIndicator" style="display: none; margin-top: 8px; font-size: 0.825rem; color: var(--portal-success-text); font-weight: 600;"></div>
+            </div>
+
+            <button type="submit" class="portal-btn portal-btn--primary portal-btn--block portal-btn--lg" id="submitCertBtn">
+              <span id="submitCertBtnText">Submit for Faculty Verification</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: Real-time AI Integrity Assessment Box -->
+      <div>
+        <div class="portal-card" style="position: sticky; top: 140px;">
+          <div class="portal-card__header">
+            <div class="portal-card__title">AI Integrity Pre-Scan</div>
+            <span class="portal-badge portal-badge--neutral">Pre-Evaluation</span>
+          </div>
+          <div class="portal-card__body">
+            <div id="liveGaugeContainer"></div>
+            <div id="liveDimensionsContainer" class="integrity-dimensions-grid"></div>
+
+            <div id="liveRecommendationBox" style="margin-top: 18px; padding: 12px; border-radius: var(--portal-radius-md); background: var(--portal-slate-50); font-size: 0.825rem; color: var(--portal-slate-600); line-height: 1.5;">
+              Fill in the certificate details to run automated heuristic validation.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let skillList = [];
+    let scanTimeout = null;
+
+    async function initAddCert() {
+      const user = await initPortal('/add_certificate.html');
+      if (!user) return;
+
+      setupTagChips();
+      setupFileDrop();
+      triggerIntegrityCheck();
+    }
+
+    function setupTagChips() {
+      const input = document.getElementById('skillInputField');
+      input.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ',') && input.value.trim()) {
+          e.preventDefault();
+          addSkillChip(input.value.trim());
+          input.value = '';
+        }
+      });
+    }
+
+    function addSkillChip(skill) {
+      if (!skillList.includes(skill)) {
+        skillList.push(skill);
+        renderSkillChips();
+        triggerIntegrityCheck();
+      }
+    }
+
+    function removeSkillChip(index) {
+      skillList.splice(index, 1);
+      renderSkillChips();
+      triggerIntegrityCheck();
+    }
+
+    function renderSkillChips() {
+      const container = document.getElementById('skillsContainer');
+      const input = document.getElementById('skillInputField');
+      container.querySelectorAll('.portal-tag-chip').forEach(c => c.remove());
+
+      skillList.forEach((s, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'portal-tag-chip';
+        chip.innerHTML = `${escapeHtml(s)} <button type="button" class="portal-tag-chip__remove" onclick="removeSkillChip(${idx})">&times;</button>`;
+        container.insertBefore(chip, input);
+      });
+      document.getElementById('skillsHiddenInput').value = skillList.join(',');
+    }
+
+    function setupFileDrop() {
+      const zone = document.getElementById('certDropzone');
+      const input = document.getElementById('certFileInput');
+
+      zone.onclick = () => input.click();
+      zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('is-dragover'); };
+      zone.ondragleave = () => zone.classList.remove('is-dragover');
+      zone.ondrop = (e) => {
+        e.preventDefault();
+        zone.classList.remove('is-dragover');
+        input.files = e.dataTransfer.files;
+        showSelectedFile(input.files[0]);
+      };
+      input.onchange = () => {
+        if (input.files[0]) showSelectedFile(input.files[0]);
+      };
+    }
+
+    function showSelectedFile(file) {
+      const indicator = document.getElementById('fileSelectedIndicator');
+      indicator.style.display = 'block';
+      indicator.textContent = `✓ Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      triggerIntegrityCheck();
+    }
+
+    async function runAutoExtractor() {
+      const text = document.getElementById('rawOcrText').value.trim();
+      if (!text) {
+        showToast('Please paste certificate text first', 'error');
+        return;
+      }
+
+      const res = await API.post('/api/ml/extract-metadata', { text });
+      if (res && res.success) {
+        if (res.title) document.getElementById('certTitle').value = res.title;
+        if (res.issue_date) document.getElementById('issueDate').value = res.issue_date;
+        if (res.category) document.getElementById('certType').value = res.category;
+
+        if (res.skills && res.skills.length > 0) {
+          res.skills.forEach(s => addSkillChip(s));
+        }
+
+        showToast(`AI Extracted: ${res.title} (${res.skills.length} skills)`, 'success');
+        triggerIntegrityCheck();
+      }
+    }
+
+    function triggerIntegrityCheck() {
+      clearTimeout(scanTimeout);
+      scanTimeout = setTimeout(async () => {
+        const payload = {
+          title: document.getElementById('certTitle').value,
+          description: document.getElementById('description').value,
+          skills: skillList.join(','),
+          issue_date: document.getElementById('issueDate').value,
+          cert_type: document.getElementById('certType').value,
+          source_url: document.getElementById('sourceUrl').value,
+          file_path: document.getElementById('certFileInput').files.length > 0 ? 'cert.pdf' : ''
+        };
+
+        const res = await API.post('/api/ml/integrity-score', payload);
+        if (res) {
+          renderIntegrityGauge('liveGaugeContainer', res.overall_score, res.risk_level, res.risk_color);
+          renderDimensionBars('liveDimensionsContainer', res.dimensions);
+          document.getElementById('liveRecommendationBox').innerHTML = `<strong>AI Assessment:</strong> ${escapeHtml(res.recommendation)}`;
+        }
+      }, 400);
+    }
+
+    async function submitCertificate(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitCertBtn');
+      const btnText = document.getElementById('submitCertBtnText');
+
+      btn.disabled = true;
+      btnText.textContent = 'Submitting & Indexing...';
+
+      const formData = new FormData();
+      formData.append('title', document.getElementById('certTitle').value);
+      formData.append('issue_date', document.getElementById('issueDate').value);
+      formData.append('cert_type', document.getElementById('certType').value);
+      formData.append('source_url', document.getElementById('sourceUrl').value);
+      formData.append('description', document.getElementById('description').value);
+      formData.append('skills', skillList.join(','));
+
+      if (document.getElementById('certFileInput').files[0]) {
+        formData.append('cert_file', document.getElementById('certFileInput').files[0]);
+      }
+
+      const res = await API.postForm('/api/certificates', formData);
+      if (res && res.success) {
+        showToast('Certificate successfully submitted for faculty review!', 'success');
+        setTimeout(() => { window.location.href = '/certificates.html'; }, 1200);
+      } else {
+        showToast(res?.error || 'Submission failed. Please check inputs.', 'error');
+        btn.disabled = false;
+        btnText.textContent = 'Submit for Faculty Verification';
+      }
+    }
+
+    initAddCert();
+  </script>
+</body>
+</html>

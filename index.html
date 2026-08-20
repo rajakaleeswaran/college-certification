@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Campus Certification Portal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-body">
+
+  <div class="login-card-box">
+    <div class="login-header-group">
+      <div class="login-header-group__logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+        </svg>
+      </div>
+      <h1 class="login-header-group__title">CertPortal</h1>
+      <p class="login-header-group__sub">Institutional Credential Verification & Analytics</p>
+    </div>
+
+    <!-- Role Tabs -->
+    <div class="login-role-tabs" id="loginRoleTabs">
+      <button type="button" class="login-role-tab is-active" onclick="switchLoginMode('student')">Student Portal</button>
+      <button type="button" class="login-role-tab" onclick="switchLoginMode('staff')">Faculty & Staff</button>
+    </div>
+
+    <!-- Quick Demo Credential Helper -->
+    <div class="login-quick-demo-pill" id="demoHelperBox" onclick="applyDemoCredentials()">
+      Click to fill sample <strong>Student</strong> credentials
+    </div>
+
+    <!-- Form -->
+    <form id="authForm" onsubmit="submitAuth(event)">
+      <div class="portal-form-group">
+        <label class="portal-form-label" for="usernameField">User ID / Register No.</label>
+        <input type="text" id="usernameField" class="portal-form-input" placeholder="e.g. 2023CSE1234" required autocomplete="username">
+      </div>
+
+      <div class="portal-form-group">
+        <label class="portal-form-label" for="passwordField">Account Password</label>
+        <input type="password" id="passwordField" class="portal-form-input" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+
+      <div id="authErrorMessage" style="color: var(--portal-danger-text); background: var(--portal-danger-bg); border: 1px solid var(--portal-danger-border); padding: 8px 12px; border-radius: var(--portal-radius-md); font-size: 0.8rem; margin-bottom: 14px; display: none;"></div>
+
+      <button type="submit" class="portal-btn portal-btn--primary portal-btn--block portal-btn--lg" id="submitAuthBtn">
+        <span id="submitAuthBtnLabel">Sign In to Portal</span>
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 18px;">
+      <a href="javascript:void(0)" onclick="promptForgotPass()" style="font-size: 0.825rem; color: var(--portal-slate-500); text-decoration: none;">Forgot password or need portal assistance?</a>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let activeMode = 'student';
+
+    function switchLoginMode(mode) {
+      activeMode = mode;
+      const tabs = document.querySelectorAll('#loginRoleTabs button');
+      tabs[0].classList.toggle('is-active', mode === 'student');
+      tabs[1].classList.toggle('is-active', mode === 'staff');
+
+      const userField = document.getElementById('usernameField');
+      const demoBox = document.getElementById('demoHelperBox');
+      const errorMsg = document.getElementById('authErrorMessage');
+      errorMsg.style.display = 'none';
+
+      if (mode === 'student') {
+        userField.placeholder = 'e.g. 2023CSE1234';
+        demoBox.innerHTML = 'Click to fill sample <strong>Student</strong> credentials';
+      } else {
+        userField.placeholder = 'e.g. STAFF101';
+        demoBox.innerHTML = 'Click to fill sample <strong>Faculty</strong> credentials';
+      }
+    }
+
+    function applyDemoCredentials() {
+      if (activeMode === 'student') {
+        document.getElementById('usernameField').value = '2023CSE1234';
+        document.getElementById('passwordField').value = 'password123';
+      } else {
+        document.getElementById('usernameField').value = 'STAFF101';
+        document.getElementById('passwordField').value = 'staff123';
+      }
+      showToast('Sample credentials loaded', 'success');
+    }
+
+    async function submitAuth(e) {
+      e.preventDefault();
+      const username = document.getElementById('usernameField').value.trim();
+      const password = document.getElementById('passwordField').value.trim();
+      const btn = document.getElementById('submitAuthBtn');
+      const btnLabel = document.getElementById('submitAuthBtnLabel');
+      const errorMsg = document.getElementById('authErrorMessage');
+
+      errorMsg.style.display = 'none';
+      btn.disabled = true;
+      btnLabel.textContent = 'Verifying credentials...';
+
+      const res = await API.post('/api/auth/login', { username, password });
+
+      if (res && res.success) {
+        btnLabel.textContent = 'Redirecting...';
+        window.location.href = res.redirect;
+      } else {
+        errorMsg.textContent = res?.error || 'Invalid credentials. Please try again.';
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btnLabel.textContent = 'Sign In to Portal';
+      }
+    }
+
+    function promptForgotPass() {
+      openPortalModal(
+        'Password Recovery Support',
+        `<p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:14px;">Please enter your institutional Register Number or Staff ID to receive a password reset link from campus IT.</p>
+         <div class="portal-form-group">
+           <label class="portal-form-label">User ID</label>
+           <input type="text" class="portal-form-input" id="recoveryUser" placeholder="e.g. 2023CSE1234">
+         </div>`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Cancel</button>
+         <button class="portal-btn portal-btn--primary" onclick="alert('Recovery instructions sent to institutional email.'); closePortalModal();">Send Recovery Email</button>`
+      );
+    }
+  </script>
+</body>
+</html>

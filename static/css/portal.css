@@ -1,0 +1,414 @@
+/* ==========================================================================
+   portal.css — Feature-Specific Components (AI Gauges, Broadcasts, Badges)
+   ========================================================================== */
+
+/* ── Login Portal Page ────────────────────────────────────────── */
+.login-body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f766e 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: var(--portal-font-sans);
+}
+
+.login-card-box {
+  background: #ffffff;
+  border-radius: var(--portal-radius-xl);
+  box-shadow: var(--portal-shadow-xl);
+  width: 100%;
+  max-width: 440px;
+  padding: 36px 32px;
+  border: 1px solid var(--portal-slate-200);
+}
+
+.login-header-group {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-header-group__logo {
+  width: 48px;
+  height: 48px;
+  background: var(--portal-brand-600);
+  border-radius: var(--portal-radius-lg);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.login-header-group__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--portal-slate-900);
+  letter-spacing: -0.02em;
+}
+
+.login-header-group__sub {
+  font-size: 0.875rem;
+  color: var(--portal-slate-500);
+  margin-top: 4px;
+}
+
+.login-role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--portal-slate-100);
+  padding: 4px;
+  border-radius: var(--portal-radius-md);
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.login-role-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--portal-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--portal-slate-600);
+  cursor: pointer;
+  transition: var(--portal-transition);
+}
+
+.login-role-tab.is-active {
+  background: #ffffff;
+  color: var(--portal-brand-700);
+  box-shadow: var(--portal-shadow-xs);
+}
+
+.login-quick-demo-pill {
+  background: var(--portal-brand-50);
+  border: 1px dashed var(--portal-brand-300);
+  border-radius: var(--portal-radius-md);
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: var(--portal-brand-700);
+  margin-bottom: 18px;
+  cursor: pointer;
+  text-align: center;
+  transition: var(--portal-transition);
+}
+
+.login-quick-demo-pill:hover {
+  background: var(--portal-brand-100);
+}
+
+/* ── AI Integrity Score Dial ──────────────────────────────────── */
+.integrity-dial-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.integrity-radial-gauge {
+  position: relative;
+  width: 170px;
+  height: 170px;
+}
+
+.integrity-radial-gauge__svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.integrity-radial-gauge__bg {
+  fill: none;
+  stroke: var(--portal-slate-100);
+  stroke-width: 12;
+}
+
+.integrity-radial-gauge__fill {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.integrity-radial-gauge__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.integrity-radial-gauge__number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--portal-slate-900);
+}
+
+.integrity-radial-gauge__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--portal-slate-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.integrity-dimensions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.integrity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.integrity-meter__header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--portal-slate-700);
+}
+
+.integrity-meter__track {
+  height: 6px;
+  background: var(--portal-slate-100);
+  border-radius: var(--portal-radius-full);
+  overflow: hidden;
+}
+
+.integrity-meter__bar {
+  height: 100%;
+  border-radius: var(--portal-radius-full);
+  transition: width 0.8s ease;
+}
+
+/* ── Career Readiness Track Items ─────────────────────────────── */
+.career-track-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--portal-slate-50);
+  border: 1px solid var(--portal-slate-200);
+  border-radius: var(--portal-radius-md);
+  margin-bottom: 10px;
+  transition: var(--portal-transition);
+}
+
+.career-track-item:hover {
+  background: #ffffff;
+  border-color: var(--portal-brand-200);
+  box-shadow: var(--portal-shadow-xs);
+}
+
+.career-track-item__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--portal-radius-sm);
+  background: var(--portal-brand-50);
+  color: var(--portal-brand-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.career-track-item__content {
+  flex: 1;
+}
+
+.career-track-item__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--portal-slate-800);
+  margin-bottom: 4px;
+}
+
+.career-track-item__bar {
+  height: 7px;
+  background: var(--portal-slate-200);
+  border-radius: var(--portal-radius-full);
+  overflow: hidden;
+}
+
+.career-track-item__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--portal-brand-500), var(--portal-brand-600));
+  border-radius: var(--portal-radius-full);
+  transition: width 1s ease;
+}
+
+.career-track-item__pct {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--portal-brand-700);
+  min-width: 44px;
+  text-align: right;
+}
+
+/* ── Staff Broadcast Dispatcher Station ───────────────────────── */
+.broadcast-template-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.broadcast-template-pill {
+  padding: 6px 12px;
+  background: var(--portal-slate-100);
+  border: 1px solid var(--portal-slate-200);
+  border-radius: var(--portal-radius-full);
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--portal-slate-700);
+  cursor: pointer;
+  transition: var(--portal-transition);
+}
+
+.broadcast-template-pill:hover {
+  background: var(--portal-brand-50);
+  border-color: var(--portal-brand-300);
+  color: var(--portal-brand-700);
+}
+
+.broadcast-live-preview {
+  background: #ffffff;
+  border: 1px solid var(--portal-slate-200);
+  border-radius: var(--portal-radius-lg);
+  padding: 18px 20px;
+  border-left: 4px solid var(--portal-brand-600);
+}
+
+.broadcast-live-preview__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--portal-slate-400);
+  margin-bottom: 8px;
+}
+
+.broadcast-live-preview__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--portal-slate-900);
+  margin-bottom: 6px;
+}
+
+.broadcast-live-preview__body {
+  font-size: 0.85rem;
+  color: var(--portal-slate-600);
+  line-height: 1.5;
+}
+
+/* ── AI OCR Metadata Extractor ────────────────────────────────── */
+.ocr-scanner-box {
+  background: var(--portal-slate-50);
+  border: 1px dashed var(--portal-slate-300);
+  border-radius: var(--portal-radius-md);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.ocr-scanner-box__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ocr-scanner-box__title {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--portal-brand-700);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Digital Credential Gallery Cards ─────────────────────────── */
+.gallery-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 22px;
+}
+
+.credential-badge-card {
+  background: #ffffff;
+  border: 1px solid var(--portal-slate-200);
+  border-radius: var(--portal-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--portal-shadow-xs);
+  transition: var(--portal-transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.credential-badge-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--portal-shadow-md);
+  border-color: var(--portal-brand-200);
+}
+
+.credential-badge-card__visual {
+  height: 140px;
+  background: linear-gradient(135deg, var(--portal-brand-700) 0%, var(--portal-slate-900) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+  color: #ffffff;
+  position: relative;
+}
+
+.credential-badge-card__vcode {
+  font-family: var(--portal-font-mono);
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.05em;
+}
+
+.credential-badge-card__icon {
+  font-size: 2rem;
+  opacity: 0.9;
+}
+
+.credential-badge-card__content {
+  padding: 18px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.credential-badge-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--portal-slate-900);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.credential-badge-card__meta {
+  font-size: 0.8rem;
+  color: var(--portal-slate-500);
+  margin-bottom: 12px;
+}
+
+.credential-badge-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Settings — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Profile & Institutional Settings</h1>
+        <p class="portal-page-description">Manage personal contact information, academic affiliation, and security credentials.</p>
+      </div>
+    </div>
+
+    <div class="portal-grid-sidebar">
+      <!-- Profile Information -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Academic & Contact Profile</div>
+        </div>
+        <div class="portal-card__body">
+          <form id="profileForm" onsubmit="saveProfileChanges(event)">
+            <div class="portal-form-grid-2">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="settingUserNumber">Register ID / Username</label>
+                <input type="text" id="settingUserNumber" class="portal-form-input" readonly style="background: var(--portal-slate-100); color: var(--portal-slate-500);">
+              </div>
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="settingRole">Institutional Role</label>
+                <input type="text" id="settingRole" class="portal-form-input" readonly style="background: var(--portal-slate-100); color: var(--portal-slate-500);">
+              </div>
+            </div>
+
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="settingFullName">Full Name *</label>
+              <input type="text" id="settingFullName" class="portal-form-input" required>
+            </div>
+
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="settingEmail">Institutional Email</label>
+              <input type="email" id="settingEmail" class="portal-form-input" placeholder="student@college.edu">
+            </div>
+
+            <div class="portal-form-grid-2">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="settingPhone">Contact Phone</label>
+                <input type="tel" id="settingPhone" class="portal-form-input" placeholder="+91-9876543210">
+              </div>
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="settingDept">Academic Department</label>
+                <input type="text" id="settingDept" class="portal-form-input" placeholder="Computer Science and Engineering">
+              </div>
+            </div>
+
+            <button type="submit" class="portal-btn portal-btn--primary" id="saveProfileBtn">
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Security & Session -->
+      <div>
+        <div class="portal-card" style="margin-bottom: 20px;">
+          <div class="portal-card__header">
+            <div class="portal-card__title">Security Credentials</div>
+          </div>
+          <div class="portal-card__body">
+            <form id="passwordChangeForm" onsubmit="updatePassword(event)">
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="newPassField">New Password</label>
+                <input type="password" id="newPassField" class="portal-form-input" placeholder="Minimum 6 characters" required minlength="6">
+              </div>
+              <div class="portal-form-group">
+                <label class="portal-form-label" for="confirmPassField">Confirm New Password</label>
+                <input type="password" id="confirmPassField" class="portal-form-input" placeholder="Re-enter password" required>
+              </div>
+              <button type="submit" class="portal-btn portal-btn--outline portal-btn--block">
+                Update Password
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="portal-card">
+          <div class="portal-card__header">
+            <div class="portal-card__title">Session Management</div>
+          </div>
+          <div class="portal-card__body">
+            <p style="font-size: 0.85rem; color: var(--portal-slate-600); margin-bottom: 14px;">
+              Terminating your active session will log you out from this device immediately.
+            </p>
+            <button type="button" class="portal-btn portal-btn--danger portal-btn--block" onclick="signOut()">
+              Sign Out from Portal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function initSettings() {
+      const user = await initPortal('/settings.html');
+      if (!user) return;
+
+      document.getElementById('settingUserNumber').value = user.username;
+      document.getElementById('settingFullName').value = user.full_name;
+      document.getElementById('settingEmail').value = user.email || '';
+      document.getElementById('settingPhone').value = user.phone || '';
+      document.getElementById('settingDept').value = user.department || '';
+      document.getElementById('settingRole').value = user.role.toUpperCase();
+    }
+
+    async function saveProfileChanges(e) {
+      e.preventDefault();
+      const btn = document.getElementById('saveProfileBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const payload = {
+        full_name: document.getElementById('settingFullName').value,
+        email: document.getElementById('settingEmail').value,
+        phone: document.getElementById('settingPhone').value,
+        department: document.getElementById('settingDept').value
+      };
+
+      const res = await API.put('/api/auth/update-profile', payload);
+      if (res && res.success) {
+        showToast('Profile updated successfully', 'success');
+      } else {
+        showToast('Failed to update profile', 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save Profile Changes';
+    }
+
+    async function updatePassword(e) {
+      e.preventDefault();
+      const newP = document.getElementById('newPassField').value;
+      const conf = document.getElementById('confirmPassField').value;
+
+      if (newP !== conf) {
+        showToast('Passwords do not match', 'error');
+        return;
+      }
+
+      const res = await API.put('/api/auth/change-password', { new_password: newP });
+      if (res && res.success) {
+        showToast('Password updated successfully', 'success');
+        document.getElementById('passwordChangeForm').reset();
+      } else {
+        showToast(res?.error || 'Password update failed', 'error');
+      }
+    }
+
+    async function signOut() {
+      await API.post('/api/auth/logout');
+      showToast('Signed out successfully', 'success');
+      setTimeout(() => { window.location.href = '/'; }, 400);
+    }
+
+    initSettings();
+  </script>
+</body>
+</html>

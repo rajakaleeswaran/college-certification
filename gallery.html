@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credentials Showcase — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Credentials Visual Showcase</h1>
+        <p class="portal-page-description">Interactive gallery of verified certificates, digital achievement badges, and technical milestones.</p>
+      </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="portal-toolbar">
+      <div class="portal-search-box">
+        <span class="portal-search-box__icon">🔍</span>
+        <input type="text" id="galleryFilterInput" class="portal-search-box__input" placeholder="Search credentials..." oninput="filterShowcase()">
+      </div>
+
+      <select id="galleryCategorySelect" class="portal-form-select" style="width: auto;" onchange="filterShowcase()">
+        <option value="">All Categories</option>
+        <option value="Technical">Technical</option>
+        <option value="Cloud">Cloud</option>
+        <option value="AI/ML">AI / ML</option>
+        <option value="Security">Security</option>
+        <option value="Design">Design</option>
+        <option value="DevOps">DevOps</option>
+      </select>
+    </div>
+
+    <!-- Gallery Grid -->
+    <div class="gallery-grid-3" id="showcaseGrid"></div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let showcaseItems = [];
+
+    async function loadShowcase() {
+      const user = await initPortal('/gallery.html');
+      if (!user) return;
+
+      showcaseItems = await API.get('/api/certificates') || [];
+      filterShowcase();
+    }
+
+    function filterShowcase() {
+      const query = document.getElementById('galleryFilterInput').value.toLowerCase();
+      const cat = document.getElementById('galleryCategorySelect').value;
+
+      const filtered = showcaseItems.filter(c => {
+        if (cat && c.cert_type !== cat) return false;
+        if (query) {
+          const text = `${c.title} ${c.skills} ${c.description} ${c.verification_code}`.toLowerCase();
+          if (!text.includes(query)) return false;
+        }
+        return true;
+      });
+
+      renderShowcaseGrid(filtered);
+    }
+
+    function getDisciplineTheme(type) {
+      const themes = {
+        'Cloud': { grad: 'linear-gradient(135deg, #0284c7, #0f172a)', icon: '☁️' },
+        'AI/ML': { grad: 'linear-gradient(135deg, #4f46e5, #0f172a)', icon: '🤖' },
+        'Security': { grad: 'linear-gradient(135deg, #dc2626, #0f172a)', icon: '🛡️' },
+        'Technical': { grad: 'linear-gradient(135deg, #0d9488, #0f172a)', icon: '💻' },
+        'Design': { grad: 'linear-gradient(135deg, #db2777, #0f172a)', icon: '🎨' },
+        'DevOps': { grad: 'linear-gradient(135deg, #ea580c, #0f172a)', icon: '⚙️' }
+      };
+      return themes[type] || { grad: 'linear-gradient(135deg, #0f766e, #0f172a)', icon: '📜' };
+    }
+
+    function renderShowcaseGrid(items) {
+      const grid = document.getElementById('showcaseGrid');
+
+      if (items.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; background:#ffffff; border-radius:var(--portal-radius-lg); border:1px solid var(--portal-slate-200);">
+            <div class="portal-empty-state">
+              <div class="portal-empty-state__icon">🖼️</div>
+              <div class="portal-empty-state__title">No credentials found</div>
+              <div class="portal-empty-state__description">Upload verified certifications to display in your portfolio showcase.</div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = items.map(c => {
+        const theme = getDisciplineTheme(c.cert_type);
+        const vcode = c.verification_code || `CERT-${c.id}`;
+
+        return `
+          <div class="credential-badge-card" onclick="viewShowcaseCard(${c.id})" style="cursor: pointer;">
+            <div class="credential-badge-card__visual" style="background: ${theme.grad};">
+              <div class="credential-badge-card__vcode">${escapeHtml(vcode)}</div>
+              <div class="credential-badge-card__icon">${theme.icon}</div>
+            </div>
+            <div class="credential-badge-card__content">
+              <div>
+                <h3 class="credential-badge-card__title">${escapeHtml(c.title)}</h3>
+                <div class="credential-badge-card__meta">Issued: ${formatDate(c.issue_date)} • ${escapeHtml(c.cert_type || 'General')}</div>
+                <div class="credential-badge-card__tags">
+                  ${(c.skills || '').split(',').filter(s => s.trim()).slice(0, 3).map(s =>
+                    `<span class="portal-tag-chip" style="font-size:0.7rem; padding:2px 7px;">${escapeHtml(s.trim())}</span>`
+                  ).join('')}
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--portal-slate-100); padding-top:10px; margin-top:6px;">
+                ${getStatusBadge(c.status)}
+                ${getIntegrityRiskBadge(c.integrity_score)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function viewShowcaseCard(certId) {
+      const cert = await API.get(`/api/certificates/${certId}`);
+      if (!cert) return;
+
+      openPortalModal(
+        cert.title,
+        `<div style="margin-bottom:14px; display:flex; gap:8px;">
+           ${getStatusBadge(cert.status)}
+           ${getIntegrityRiskBadge(cert.integrity_score)}
+           <span class="portal-badge portal-badge--info">${escapeHtml(cert.cert_type || 'General')}</span>
+         </div>
+         <p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:12px;"><strong>Verification ID:</strong> <code>${cert.verification_code || 'N/A'}</code></p>
+         ${cert.description ? `<p style="font-size:0.875rem; line-height:1.6; color:var(--portal-slate-700); margin-bottom:14px;">${escapeHtml(cert.description)}</p>` : ''}
+         ${cert.skills ? `<div style="margin-bottom:14px;"><strong style="font-size:0.8rem; color:var(--portal-slate-700);">Skills Verified:</strong><div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">${cert.skills.split(',').map(s => `<span class="portal-tag-chip">${escapeHtml(s.trim())}</span>`).join('')}</div></div>` : ''}
+         ${cert.source_url ? `<p style="font-size:0.8rem;"><a href="${escapeHtml(cert.source_url)}" target="_blank" style="color:var(--portal-brand-600); text-decoration:none;">🔗 Official Verification Registry Link</a></p>` : ''}`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Close</button>`
+      );
+    }
+
+    loadShowcase();
+  </script>
+</body>
+</html>

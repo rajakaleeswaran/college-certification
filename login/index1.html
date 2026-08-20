@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certification Uploader</title>
+  <link rel="stylesheet" href="stylles.css">
+  <style>
+    /* Body as centered flex container */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-image: url('DJI_0063.jpeg'); /* unchanged image path */
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+    }
+    * { box-sizing: border-box; }
+
+    /* Main card */
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    /* Logo remains in place */
+    .logo {
+      display: block;
+      margin: 24px auto 0;
+      max-width: 180px;
+      height: auto;
+    }
+
+    /* Header unchanged styling */
+    .header {
+      background-color: #5f9ea0;
+      color: white;
+      padding: 16px 0;
+    }
+    .header h2 { margin: 0; font-size: 1.2rem; letter-spacing: 1px; }
+
+    /* Tabs with smooth background transition */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #5f9ea0;
+    }
+    .tabs button {
+      flex: 1;
+      padding: 12px 0;
+      background: #6ca9aa;
+      border: none;
+      border-right: 1px solid #5f9ea0;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .tabs button:last-child { border-right: none; }
+    .tabs button.active { background: #5f9ea0; font-weight: bold; }
+
+    /* Fade animation for form container */
+    .form-container1 {
+      padding: 20px;
+      text-align: left;
+      opacity: 1;
+      transition: opacity 0.5s ease-in-out;
+    }
+    .form-container1.fading {
+      opacity: 0;
+    }
+
+    .input-group { margin-bottom: 16px; }
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #333;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #f9f9f9;
+      transition: background 0.3s;
+    }
+    .input-group input:focus {
+      background: #eef;
+      outline: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.3s;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.9; }
+
+    .forgot {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .forgot a { color: #0066cc; text-decoration: none; }
+    .forgot a:hover { text-decoration: underline; }
+
+    /* Popup styling unchanged */
+    .form-popup {
+      display: none;
+      position: fixed;
+      bottom: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      width: 90%;
+      max-width: 360px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Logo unchanged -->
+    <img src="logo1.png" alt="Logo" class="logo">
+
+    <div class="header">
+      <h2>CERTIFICATION UPLOADER</h2>
+    </div>
+
+    <div class="tabs">
+      <button id="studentTab" class="active">STUDENT</button>
+      <button id="staffTab">STAFF</button>
+    </div>
+
+    <form method="post" action="upload.php" class="form-container1" id="loginForm">
+      <input type="hidden" name="loginType" id="loginType" value="student">
+
+      <div class="input-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Register No." required>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="DD-MM-YYYY" required>
+      </div>
+
+      <button type="submit" class="btn" name="login_user">Login</button>
+
+      <div class="forgot" onclick="openForm()">
+        Forgot Password <a>Click Here</a>.
+      </div>
+    </form>
+  </div>
+
+  <!-- Forgot Password Popup (unchanged) -->
+  <div class="form-popup" id="myForm">
+    <form action="login.php" class="form-container1" method="post" style="background:#fff;">
+      <h3 style="text-align:center; margin-top:0;">Forgot Password</h3>
+      <div class="input-group">
+        <label for="userid">User ID</label>
+        <input type="text" id="userid" name="userid" placeholder="Enter User ID" required>
+      </div>
+      <div class="input-group">
+        <label for="mail">Email</label>
+        <input type="text" id="mail" name="mail" placeholder="Enter Email" required>
+      </div>
+      <button type="submit" class="btn" name="forgot_pass">Send Email</button>
+      <button type="button" class="btn cancel" style="background:red; margin-top:8px;" onclick="closeForm()">Close</button>
+    </form>
+  </div>
+
+  <script>
+    const studentTab = document.getElementById('studentTab');
+    const staffTab = document.getElementById('staffTab');
+    const loginType = document.getElementById('loginType');
+    const formEl = document.getElementById('loginForm');
+
+    function switchTab(type) {
+      // start fade-out
+      formEl.classList.add('fading');
+      setTimeout(() => {
+        loginType.value = type;
+        // toggle active classes
+        if (type === 'student') {
+          studentTab.classList.add('active');
+          staffTab.classList.remove('active');
+        } else {
+          staffTab.classList.add('active');
+          studentTab.classList.remove('active');
+        }
+        // fade-in
+        formEl.classList.remove('fading');
+      }, 300);
+    }
+
+    studentTab.addEventListener('click', () => switchTab('student'));
+    staffTab.addEventListener('click', () => switchTab('staff'));
+
+    function openForm() {
+      document.getElementById('myForm').style.display = 'block';
+    }
+    function closeForm() {
+      document.getElementById('myForm').style.display = 'none';
+    }
+  </script>
+
+</body>
+</html>

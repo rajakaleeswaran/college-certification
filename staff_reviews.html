@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification & Review Queue — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">Credential Verification & Review Queue</h1>
+        <p class="portal-page-description">Inspect student submissions, audit AI integrity scores, and sign off official institutional approvals.</p>
+      </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="portal-toolbar">
+      <div class="portal-search-box">
+        <span class="portal-search-box__icon">🔍</span>
+        <input type="text" id="reviewSearchInput" class="portal-search-box__input" placeholder="Search by student name, register no, or title..." oninput="filterReviewQueue()">
+      </div>
+
+      <select id="reviewQueueFilterSelect" class="portal-form-select" style="width: auto;" onchange="filterReviewQueue()">
+        <option value="pending">⏳ Pending Review Only</option>
+        <option value="approved">✓ Approved Records</option>
+        <option value="rejected">✕ Action Required / Rejected</option>
+        <option value="">All Records</option>
+      </select>
+    </div>
+
+    <!-- Review Queue Container -->
+    <div id="reviewCardsStack"></div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let allQueueCerts = [];
+
+    async function loadReviewQueue() {
+      const user = await initPortal('/staff_reviews.html');
+      if (!user) return;
+
+      allQueueCerts = await API.get('/api/certificates') || [];
+      filterReviewQueue();
+    }
+
+    function filterReviewQueue() {
+      const query = document.getElementById('reviewSearchInput').value.toLowerCase();
+      const status = document.getElementById('reviewQueueFilterSelect').value;
+
+      const filtered = allQueueCerts.filter(c => {
+        if (status && c.status !== status) return false;
+        if (query) {
+          const haystack = `${c.title} ${c.student_name} ${c.student_username} ${c.student_dept} ${c.skills}`.toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      renderReviewCards(filtered);
+    }
+
+    function renderReviewCards(records) {
+      const container = document.getElementById('reviewCardsStack');
+
+      if (records.length === 0) {
+        container.innerHTML = `
+          <div class="portal-card">
+            <div class="portal-empty-state">
+              <div class="portal-empty-state__icon">✓</div>
+              <div class="portal-empty-state__title">No submissions matching this filter</div>
+              <div class="portal-empty-state__description">All student submissions for this category have been evaluated.</div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = records.map(c => `
+        <div class="portal-card" style="margin-bottom: 16px;">
+          <div class="portal-card__header">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--portal-slate-900);">${escapeHtml(c.title)}</h3>
+                <span class="portal-badge portal-badge--info">${escapeHtml(c.cert_type || 'General')}</span>
+              </div>
+              <div style="font-size: 0.825rem; color: var(--portal-slate-500);">
+                Submitted by: <strong>${escapeHtml(c.student_name || 'Student')}</strong> (${escapeHtml(c.student_username || '')})
+                ${c.student_dept ? ` • Department of ${escapeHtml(c.student_dept)}` : ''}
+                • Issued: ${formatDate(c.issue_date)}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              ${getStatusBadge(c.status)}
+              ${getIntegrityRiskBadge(c.integrity_score)}
+            </div>
+          </div>
+
+          <div class="portal-card__body">
+            ${c.description ? `<p style="font-size:0.875rem; color:var(--portal-slate-700); line-height:1.5; margin-bottom:12px;">${escapeHtml(c.description)}</p>` : ''}
+
+            ${c.skills ? `
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:14px;">
+                ${c.skills.split(',').map(s => `<span class="portal-tag-chip">${escapeHtml(s.trim())}</span>`).join('')}
+              </div>` : ''}
+
+            ${c.review_feedback ? `
+              <div style="padding:10px 14px; border-radius:var(--portal-radius-md); background:${c.status === 'approved' ? 'var(--portal-success-bg)' : 'var(--portal-danger-bg)'}; font-size:0.85rem; margin-bottom:12px;">
+                <strong>Faculty Feedback:</strong> ${escapeHtml(c.review_feedback)}
+              </div>` : ''}
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid var(--portal-slate-100); padding-top:14px; margin-top:6px;">
+              <button class="portal-btn portal-btn--outline portal-btn--sm" onclick="inspectAIIntegrity(${c.id})">
+                🔍 Inspect AI Integrity Report
+              </button>
+
+              ${c.status === 'pending' ? `
+                <button class="portal-btn portal-btn--danger portal-btn--sm" onclick="openReviewDecisionModal(${c.id}, 'rejected')">
+                  ✕ Reject
+                </button>
+                <button class="portal-btn portal-btn--success portal-btn--sm" onclick="openReviewDecisionModal(${c.id}, 'approved')">
+                  ✓ Approve Credential
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function inspectAIIntegrity(certId) {
+      const res = await API.get(`/api/certificates/${certId}/integrity`);
+      if (!res) return;
+
+      openPortalModal(
+        `AI Credential Integrity Audit Report`,
+        `<div id="facultyAuditDial"></div>
+         <div id="facultyAuditDimensions" class="integrity-dimensions-grid" style="margin-top:16px;"></div>
+
+         <div style="margin-top:16px;">
+           <div style="font-size:0.85rem; font-weight:700; color:var(--portal-slate-800); margin-bottom:6px;">Trust Indicators</div>
+           ${res.trust_signals.length > 0 ? res.trust_signals.map(s => `<div style="font-size:0.8rem; color:var(--portal-success-text); margin-bottom:4px;">✓ ${escapeHtml(s)}</div>`).join('') : '<div style="font-size:0.8rem; color:var(--portal-slate-400);">No specific high-trust signals found</div>'}
+         </div>
+
+         <div style="margin-top:14px;">
+           <div style="font-size:0.85rem; font-weight:700; color:var(--portal-slate-800); margin-bottom:6px;">Flagged Discrepancies</div>
+           ${res.flags.length > 0 ? res.flags.map(f => f.issues.map(i => `<div style="font-size:0.8rem; color:var(--portal-danger-text); margin-bottom:4px;">⚠️ ${escapeHtml(i)}</div>`).join('')).join('') : '<div style="font-size:0.8rem; color:var(--portal-success-text);">✓ Zero critical anomalies flagged</div>'}
+         </div>
+
+         <div style="margin-top:16px; padding:12px; border-radius:var(--portal-radius-md); background:var(--portal-slate-50); font-size:0.825rem; color:var(--portal-slate-700);">
+           <strong>AI Recommendation:</strong> ${escapeHtml(res.recommendation)}
+         </div>`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Done</button>`
+      );
+
+      setTimeout(() => {
+        renderIntegrityGauge('facultyAuditDial', res.overall_score, res.risk_level, res.risk_color);
+        renderDimensionBars('facultyAuditDimensions', res.dimensions);
+      }, 80);
+    }
+
+    function openReviewDecisionModal(certId, decision) {
+      const isApprove = decision === 'approved';
+      openPortalModal(
+        `${isApprove ? 'Approve & Validate' : 'Reject / Request Revision'} Credential`,
+        `<p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:12px;">
+           Provide review comments for the student record. Feedback is automatically notified to the student inbox.
+         </p>
+         <div class="portal-form-group">
+           <label class="portal-form-label">Review Feedback</label>
+           <textarea id="decisionFeedbackText" class="portal-form-textarea" placeholder="${isApprove ? 'e.g. Verified with official registry. Approved for placement credit.' : 'e.g. Please upload higher resolution transcript showing issue date.'}"></textarea>
+         </div>`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Cancel</button>
+         <button class="portal-btn portal-btn--${isApprove ? 'success' : 'danger'}" onclick="commitReview(${certId}, '${decision}')">Confirm ${isApprove ? 'Approval' : 'Rejection'}</button>`
+      );
+    }
+
+    async function commitReview(certId, status) {
+      const feedback = document.getElementById('decisionFeedbackText').value.trim();
+      const res = await API.put(`/api/certificates/${certId}/review`, { status, feedback });
+
+      if (res && res.success) {
+        closePortalModal();
+        showToast(`Credential marked as ${status.toUpperCase()}`, 'success');
+        allQueueCerts = await API.get('/api/certificates') || [];
+        filterReviewQueue();
+      } else {
+        showToast(res?.error || 'Review failed', 'error');
+      }
+    }
+
+    loadReviewQueue();
+  </script>
+</body>
+</html>

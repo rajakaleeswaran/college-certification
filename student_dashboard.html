@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Overview — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="portal-body">
+
+  <main class="portal-container" id="dashboardContainer">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title" id="studentGreeting">Student Dashboard</h1>
+        <p class="portal-page-description">Overview of your submitted credentials, verification states, and velocity metrics.</p>
+      </div>
+      <div class="portal-page-actions">
+        <a href="/add_certificate.html" class="portal-btn portal-btn--primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Upload Certificate
+        </a>
+        <a href="/ai_insights.html" class="portal-btn portal-btn--outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          View AI Career Radar
+        </a>
+      </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="portal-grid-4" id="statCardsGrid">
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--brand">📜</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="valTotal">0</div>
+          <div class="portal-stat-card__label">Total Certifications</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--success">✓</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="valApproved">0</div>
+          <div class="portal-stat-card__label">Verified & Approved</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--warning">⏳</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="valPending">0</div>
+          <div class="portal-stat-card__label">Under Faculty Review</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--accent">🛡️</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="valIntegrity">0%</div>
+          <div class="portal-stat-card__label">Portfolio Integrity Index</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="portal-grid-2">
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Monthly Submission Velocity</div>
+          <span class="portal-badge portal-badge--neutral">Historical Trend</span>
+        </div>
+        <div class="portal-card__body" style="height: 270px;">
+          <canvas id="monthlyTrendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Verification Status Ratio</div>
+          <span class="portal-badge portal-badge--neutral">Current Portfolio</span>
+        </div>
+        <div class="portal-card__body" style="height: 270px;">
+          <canvas id="statusRatioChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Submissions Table -->
+    <div class="portal-card">
+      <div class="portal-card__header">
+        <div class="portal-card__title">Recent Submissions & Reviews</div>
+        <a href="/certificates.html" class="portal-btn portal-btn--outline portal-btn--sm">View All Records</a>
+      </div>
+      <div class="portal-table-wrapper" id="recentTableWrapper">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th class="portal-table__th">Credential Title</th>
+              <th class="portal-table__th">Discipline</th>
+              <th class="portal-table__th">Issue Date</th>
+              <th class="portal-table__th">Review Status</th>
+              <th class="portal-table__th">AI Integrity Index</th>
+              <th class="portal-table__th" style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="recentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function loadStudentOverview() {
+      const user = await initPortal('/student_dashboard.html');
+      if (!user) return;
+
+      document.getElementById('studentGreeting').textContent = `Welcome, ${user.full_name}`;
+
+      const [stats, certs] = await Promise.all([
+        API.get('/api/analytics/summary'),
+        API.get('/api/certificates')
+      ]);
+
+      if (stats) {
+        document.getElementById('valTotal').textContent = stats.total || 0;
+        document.getElementById('valApproved').textContent = stats.approved || 0;
+        document.getElementById('valPending').textContent = stats.pending || 0;
+        document.getElementById('valIntegrity').textContent = `${stats.avg_integrity || 0}%`;
+
+        // Render Monthly Trend
+        if (stats.monthly && stats.monthly.length > 0) {
+          createLineChart(
+            'monthlyTrendChart',
+            stats.monthly.map(m => m.month),
+            [{
+              label: 'Certifications Completed',
+              data: stats.monthly.map(m => m.count),
+              borderColor: THEME_COLORS.brand,
+              backgroundColor: 'rgba(13, 148, 136, 0.08)',
+              fill: true
+            }]
+          );
+        }
+
+        // Render Doughnut
+        createDoughnutChart(
+          'statusRatioChart',
+          ['Approved', 'Under Review', 'Action Required'],
+          [stats.approved || 0, stats.pending || 0, stats.rejected || 0],
+          [THEME_COLORS.success, THEME_COLORS.warning, THEME_COLORS.danger]
+        );
+      }
+
+      // Render Recent Table
+      const tbody = document.getElementById('recentTableBody');
+      if (certs && certs.length > 0) {
+        tbody.innerHTML = certs.slice(0, 5).map(c => `
+          <tr class="portal-table__tr">
+            <td class="portal-table__td" style="font-weight:600; color:var(--portal-slate-900);">${escapeHtml(c.title)}</td>
+            <td class="portal-table__td"><span class="portal-badge portal-badge--info">${escapeHtml(c.cert_type || 'General')}</span></td>
+            <td class="portal-table__td">${formatDate(c.issue_date)}</td>
+            <td class="portal-table__td">${getStatusBadge(c.status)}</td>
+            <td class="portal-table__td">${getIntegrityRiskBadge(c.integrity_score)}</td>
+            <td class="portal-table__td" style="text-align: right;">
+              <button class="portal-btn portal-btn--outline portal-btn--sm" onclick="showCertDetails(${c.id})">Review Audit</button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="6" class="portal-table__td" style="text-align:center; padding:32px; color:var(--portal-slate-400);">No certification records found. Upload your first certificate to get started.</td></tr>`;
+      }
+    }
+
+    async function showCertDetails(certId) {
+      const cert = await API.get(`/api/certificates/${certId}`);
+      if (!cert) return;
+
+      const integrity = await API.get(`/api/certificates/${certId}/integrity`);
+
+      openPortalModal(
+        `Credential Review: ${cert.title}`,
+        `<div style="display:flex; gap:8px; margin-bottom:16px;">
+           ${getStatusBadge(cert.status)}
+           ${getIntegrityRiskBadge(cert.integrity_score)}
+           <span class="portal-badge portal-badge--info">${escapeHtml(cert.cert_type || 'Technical')}</span>
+         </div>
+         <p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:14px;"><strong>Issued:</strong> ${formatDate(cert.issue_date)} • <strong>Verification Code:</strong> <code>${cert.verification_code || 'N/A'}</code></p>
+         ${cert.description ? `<p style="font-size:0.875rem; line-height:1.6; color:var(--portal-slate-700); margin-bottom:14px;">${escapeHtml(cert.description)}</p>` : ''}
+         ${cert.review_feedback ? `<div style="padding:12px; border-radius:var(--portal-radius-md); background:${cert.status === 'approved' ? 'var(--portal-success-bg)' : 'var(--portal-danger-bg)'}; font-size:0.85rem; margin-bottom:16px;"><strong>Faculty Comments:</strong> ${escapeHtml(cert.review_feedback)}</div>` : ''}
+         <div id="modalIntegrityBox"></div>`,
+        `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Close</button>`
+      );
+
+      if (integrity) {
+        setTimeout(() => {
+          renderIntegrityGauge('modalIntegrityBox', integrity.overall_score, integrity.risk_level, integrity.risk_color);
+        }, 80);
+      }
+    }
+
+    loadStudentOverview();
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Career Radar & Skills Intelligence — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">AI Career Radar & Competency Matrix</h1>
+        <p class="portal-page-description">Predictive career track alignment computed from your verified certificates and technical skills taxonomy.</p>
+      </div>
+      <div class="portal-page-actions">
+        <a href="/add_certificate.html" class="portal-btn portal-btn--primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add New Skill Certificate
+        </a>
+      </div>
+    </div>
+
+    <!-- Top Summary Banner -->
+    <div class="portal-grid-3">
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--brand">🎯</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="overallReadinessVal">0%</div>
+          <div class="portal-stat-card__label">Placement Readiness Score</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--accent">🚀</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="topTrackVal" style="font-size: 1.25rem;">Analyzing...</div>
+          <div class="portal-stat-card__label">Strongest Domain Alignment</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--success">⭐</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="totalSkillsVal">0</div>
+          <div class="portal-stat-card__label">Verified Technical Competencies</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Career Radar & Domain Breakdown Grid -->
+    <div class="portal-grid-sidebar">
+      <!-- Left: Domain Alignment Breakdown -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Domain Match Breakdown</div>
+          <span class="portal-badge portal-badge--info">TF-IDF Vectorized</span>
+        </div>
+        <div class="portal-card__body" id="careerTracksList">
+          <div class="portal-empty-state">
+            <div class="portal-empty-state__icon">⏳</div>
+            <div class="portal-empty-state__title">Computing competency vectors...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Radar Chart Visualization -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Competency Radar</div>
+        </div>
+        <div class="portal-card__body" style="height: 340px;">
+          <canvas id="careerRadarCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skill Gap Recommendations & Frequency Grid -->
+    <div class="portal-grid-2">
+      <!-- Skill Gap Action Items -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Recommended Credentials & Skill Gaps</div>
+          <span class="portal-badge portal-badge--neutral">Placement Advisory</span>
+        </div>
+        <div class="portal-card__body" id="skillGapsList"></div>
+      </div>
+
+      <!-- Skill Taxonomy Frequency -->
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div class="portal-card__title">Verified Skill Density</div>
+        </div>
+        <div class="portal-card__body" style="height: 320px;">
+          <canvas id="skillDensityCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function loadAIInsights() {
+      const user = await initPortal('/ai_insights.html');
+      if (!user) return;
+
+      const [career, stats] = await Promise.all([
+        API.get('/api/ml/predict-career'),
+        API.get('/api/analytics/summary')
+      ]);
+
+      if (career) {
+        document.getElementById('overallReadinessVal').textContent = `${Math.round(career.overall_readiness)}%`;
+        document.getElementById('topTrackVal').textContent = career.top_track || 'General';
+        document.getElementById('totalSkillsVal').textContent = career.total_skills || 0;
+
+        // Render Radar Chart
+        if (career.tracks && career.tracks.length > 0) {
+          createRadarChart(
+            'careerRadarCanvas',
+            career.tracks.map(t => t.name.split('&')[0].trim()),
+            career.tracks.map(t => Math.round(t.match_pct))
+          );
+
+          // Render Track Bars
+          const list = document.getElementById('careerTracksList');
+          list.innerHTML = career.tracks.map(t => `
+            <div class="career-track-item">
+              <div class="career-track-item__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+              </div>
+              <div class="career-track-item__content">
+                <div class="career-track-item__name">${escapeHtml(t.name)}</div>
+                <div class="career-track-item__bar">
+                  <div class="career-track-item__bar-fill" style="width: ${Math.round(t.match_pct)}%;"></div>
+                </div>
+                ${t.matched_skills.length > 0 ? `
+                  <div style="font-size:0.75rem; color:var(--portal-slate-500); margin-top:6px;">
+                    Verified: ${t.matched_skills.slice(0, 4).join(', ')}
+                  </div>` : ''}
+              </div>
+              <div class="career-track-item__pct">${Math.round(t.match_pct)}%</div>
+            </div>
+          `).join('');
+        }
+
+        // Recommendations List
+        const gapsEl = document.getElementById('skillGapsList');
+        if (career.recommendations && career.recommendations.length > 0) {
+          gapsEl.innerHTML = career.recommendations.map(r => `
+            <div style="display:flex; gap:12px; padding:14px; background:var(--portal-slate-50); border:1px solid var(--portal-slate-200); border-radius:var(--portal-radius-md); margin-bottom:10px;">
+              <div style="color:var(--portal-brand-600); font-size:1.1rem; flex-shrink:0;">💡</div>
+              <div style="font-size:0.875rem; color:var(--portal-slate-700); line-height:1.5;">${escapeHtml(r)}</div>
+            </div>
+          `).join('');
+        } else {
+          gapsEl.innerHTML = '<p style="color:var(--portal-slate-400); font-size:0.875rem;">Upload more certificates to generate personalized placement advisories.</p>';
+        }
+      }
+
+      // Render Skill Frequency
+      if (stats && stats.skill_frequency) {
+        const entries = Object.entries(stats.skill_frequency).slice(0, 8);
+        createHorizontalBarChart(
+          'skillDensityCanvas',
+          entries.map(e => e[0]),
+          entries.map(e => e[1]),
+          entries.map((_, i) => [THEME_COLORS.brand, THEME_COLORS.accent, THEME_COLORS.success, THEME_COLORS.warning][i % 4])
+        );
+      }
+    }
+
+    loadAIInsights();
+  </script>
+</body>
+</html>
