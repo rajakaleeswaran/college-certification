@@ -16,9 +16,9 @@
 
 .portal-header__inner {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -115,12 +115,12 @@
 }
 
 .portal-navbar__inner {
-  max-width: 1320px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -133,8 +133,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 16px;
-  font-size: 0.875rem;
+  padding: 14px 18px;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--portal-slate-600);
   text-decoration: none;
@@ -170,10 +170,10 @@
 
 /* ── Page Wrapper & Header ────────────────────────────────────── */
 .portal-container {
-  max-width: 1320px;
+  max-width: 1600px;
   width: 100%;
   margin: 0 auto;
-  padding: 28px 24px 64px;
+  padding: 32px 32px 64px;
   flex: 1;
 }
 

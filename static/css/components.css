@@ -98,19 +98,20 @@
 /* ── Cards ────────────────────────────────────────────────────── */
 .portal-card {
   background: #ffffff;
-  border-radius: var(--portal-radius-lg);
+  border-radius: var(--portal-radius-xl, 16px);
   border: 1px solid var(--portal-slate-200);
-  box-shadow: var(--portal-shadow-xs);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
   overflow: hidden;
-  transition: var(--portal-transition);
+  transition: all 0.25s ease;
 }
 
 .portal-card:hover {
-  border-color: var(--portal-slate-300);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
 }
 
 .portal-card__header {
-  padding: 18px 22px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--portal-slate-100);
   display: flex;
   align-items: center;
@@ -119,10 +120,10 @@
 }
 
 .portal-card__title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--portal-slate-900);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -135,11 +136,11 @@
 }
 
 .portal-card__body {
-  padding: 22px;
+  padding: 24px;
 }
 
 .portal-card__footer {
-  padding: 14px 22px;
+  padding: 16px 24px;
   background: var(--portal-slate-50);
   border-top: 1px solid var(--portal-slate-100);
 }
@@ -147,21 +148,22 @@
 /* ── Stat Metric Cards ────────────────────────────────────────── */
 .portal-stat-card {
   background: #ffffff;
-  border-radius: var(--portal-radius-lg);
+  border-radius: var(--portal-radius-xl, 16px);
   border: 1px solid var(--portal-slate-200);
-  padding: 20px 22px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: var(--portal-shadow-xs);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   position: relative;
   overflow: hidden;
-  transition: var(--portal-transition);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .portal-stat-card:hover {
-  box-shadow: var(--portal-shadow-sm);
-  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -6px rgba(0, 0, 0, 0.07);
+  transform: translateY(-3px);
+  border-color: #94a3b8;
 }
 
 .portal-stat-card__top {

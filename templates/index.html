@@ -3,56 +3,367 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — Campus Certification Portal</title>
+  <title>Sign In — CertPortal AI Institutional Credential & Career Platform</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .login-wrapper {
+      min-height: 100vh;
+      background: #090d16;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.25) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.2) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+        radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      position: relative;
+      overflow: hidden;
+      font-family: var(--portal-font-sans);
+    }
+
+    /* Ambient Floating Orbs */
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.6;
+      animation: orbFloat 14s infinite alternate ease-in-out;
+    }
+    .ambient-orb--1 {
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(13, 148, 136, 0.45), transparent 70%);
+      top: -100px;
+      left: -100px;
+    }
+    .ambient-orb--2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(79, 70, 229, 0.35), transparent 70%);
+      bottom: -120px;
+      right: -100px;
+      animation-duration: 18s;
+    }
+
+    @keyframes orbFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, 40px) scale(1.08); }
+      100% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Main Container */
+    .login-stage {
+      max-width: 1160px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 980px) {
+      .login-stage {
+        grid-template-columns: 1fr;
+        max-width: 500px;
+        gap: 24px;
+      }
+      .login-hero-pane {
+        display: none;
+      }
+    }
+
+    /* Left Hero Showcase */
+    .login-hero-pane {
+      color: #ffffff;
+      padding: 20px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(13, 148, 136, 0.15);
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #5eead4;
+      margin-bottom: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-description {
+      font-size: 1.05rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 540px;
+    }
+    .hero-features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .hero-feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .hero-feat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .hero-feat-text strong {
+      display: block;
+      font-size: 0.925rem;
+      color: #f1f5f9;
+      margin-bottom: 2px;
+    }
+    .hero-feat-text span {
+      font-size: 0.825rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+    .hero-stats-row {
+      display: flex;
+      gap: 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .hero-stat-box div:first-child {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #2dd4bf;
+    }
+    .hero-stat-box div:last-child {
+      font-size: 0.775rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Right Glassmorphic Card */
+    .login-glass-card {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--portal-radius-2xl, 24px);
+      padding: 38px 34px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+    .login-card-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .login-card-header__logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #0d9488, #0f766e);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 8px 16px -4px rgba(13, 148, 136, 0.4);
+      margin-bottom: 12px;
+    }
+    .login-card-header__title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--portal-slate-900);
+      letter-spacing: -0.02em;
+    }
+    .login-card-header__sub {
+      font-size: 0.85rem;
+      color: var(--portal-slate-500);
+      margin-top: 4px;
+    }
+
+    /* 3-Role Segmented Tabs */
+    .login-role-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: var(--portal-slate-100);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .login-role-tab {
+      padding: 9px 8px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--portal-slate-600);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .login-role-tab.is-active {
+      background: #ffffff;
+      color: var(--portal-brand-700);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .login-quick-demo-pill {
+      background: #f0fdfa;
+      border: 1px dashed #5eead4;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #0f766e;
+      margin-bottom: 20px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .login-quick-demo-pill:hover {
+      background: #ccfbf1;
+      border-color: #0d9488;
+    }
+  </style>
 </head>
-<body class="login-body">
+<body class="login-wrapper">
 
-  <div class="login-card-box">
-    <div class="login-header-group">
-      <div class="login-header-group__logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-        </svg>
-      </div>
-      <h1 class="login-header-group__title">CertPortal</h1>
-      <p class="login-header-group__sub">Institutional Credential Verification & Analytics</p>
-    </div>
+  <!-- Floating Ambient Glowing Orbs -->
+  <div class="ambient-orb ambient-orb--1"></div>
+  <div class="ambient-orb ambient-orb--2"></div>
 
-    <!-- Role Tabs -->
-    <div class="login-role-tabs" id="loginRoleTabs" style="grid-template-columns: 1fr 1fr 1fr;">
-      <button type="button" class="login-role-tab is-active" onclick="switchLoginMode('student')">Student</button>
-      <button type="button" class="login-role-tab" onclick="switchLoginMode('mentor')">Mentor</button>
-      <button type="button" class="login-role-tab" onclick="switchLoginMode('hod')">HOD / Admin</button>
-    </div>
-
-    <!-- Quick Demo Credential Helper -->
-    <div class="login-quick-demo-pill" id="demoHelperBox" onclick="applyDemoCredentials()">
-      Click to fill sample <strong>Student</strong> credentials
-    </div>
-
-    <!-- Form -->
-    <form id="authForm" onsubmit="submitAuth(event)">
-      <div class="portal-form-group">
-        <label class="portal-form-label" for="usernameField">User ID / Register No.</label>
-        <input type="text" id="usernameField" class="portal-form-input" placeholder="e.g. 2023CSE1234" required autocomplete="username">
+  <div class="login-stage">
+    <!-- Left Hero Pane -->
+    <div class="login-hero-pane">
+      <div class="hero-badge">
+        <span>⚡ CertPortal AI Platform</span>
+        <span style="opacity:0.4;">•</span>
+        <span>Version 2.0</span>
       </div>
 
-      <div class="portal-form-group">
-        <label class="portal-form-label" for="passwordField">Account Password</label>
-        <input type="password" id="passwordField" class="portal-form-input" placeholder="••••••••" required autocomplete="current-password">
+      <h1 class="hero-title">Next-Gen Credential Governance & Career Intelligence</h1>
+      <p class="hero-description">
+        AI-driven student credential verification, NLP skill taxonomy extraction, multi-track career readiness radar, and scoped faculty mentorship for modern colleges.
+      </p>
+
+      <div class="hero-features-list">
+        <div class="hero-feat-item">
+          <div class="hero-feat-icon">🛡️</div>
+          <div class="hero-feat-text">
+            <strong>Cryptographic Verification & Integrity Scoring</strong>
+            <span>Multi-factor anomaly scanner with SHA-256 digital validation and public QR checks.</span>
+          </div>
+        </div>
+
+        <div class="hero-feat-item">
+          <div class="hero-feat-icon">🎯</div>
+          <div class="hero-feat-text">
+            <strong>AI Career Radar & Skill Gap Engine</strong>
+            <span>Computes placement readiness %, extracts skill gaps, and generates 12-week roadmaps.</span>
+          </div>
+        </div>
+
+        <div class="hero-feat-item">
+          <div class="hero-feat-icon">👨‍🏫</div>
+          <div class="hero-feat-text">
+            <strong>Scoped Faculty Mentorship & HOD Console</strong>
+            <span>Mentors review assigned student batches across years; HOD maintains 360° cohort oversight.</span>
+          </div>
+        </div>
       </div>
 
-      <div id="authErrorMessage" style="color: var(--portal-danger-text); background: var(--portal-danger-bg); border: 1px solid var(--portal-danger-border); padding: 8px 12px; border-radius: var(--portal-radius-md); font-size: 0.8rem; margin-bottom: 14px; display: none;"></div>
+      <div class="hero-stats-row">
+        <div class="hero-stat-box">
+          <div>4,800+</div>
+          <div>Verified Credentials</div>
+        </div>
+        <div class="hero-stat-box">
+          <div>99.4%</div>
+          <div>AI Integrity Precision</div>
+        </div>
+        <div class="hero-stat-box">
+          <div>6 Tracks</div>
+          <div>Career Readiness</div>
+        </div>
+      </div>
+    </div>
 
-      <button type="submit" class="portal-btn portal-btn--primary portal-btn--block portal-btn--lg" id="submitAuthBtn">
-        <span id="submitAuthBtnLabel">Sign In to Portal</span>
-      </button>
-    </form>
+    <!-- Right Glassmorphic Form Card -->
+    <div class="login-glass-card">
+      <div class="login-card-header">
+        <div class="login-card-header__logo">🎓</div>
+        <h2 class="login-card-header__title">Sign In to CertPortal</h2>
+        <p class="login-card-header__sub">Select your institutional role to continue</p>
+      </div>
 
-    <div style="text-align: center; margin-top: 18px;">
-      <a href="javascript:void(0)" onclick="promptForgotPass()" style="font-size: 0.825rem; color: var(--portal-slate-500); text-decoration: none;">Forgot password or need portal assistance?</a>
+      <!-- Role Selector -->
+      <div class="login-role-tabs" id="loginRoleTabs">
+        <button type="button" class="login-role-tab is-active" onclick="switchLoginMode('student')">
+          <span>🎓</span> Student
+        </button>
+        <button type="button" class="login-role-tab" onclick="switchLoginMode('mentor')">
+          <span>👨‍🏫</span> Mentor
+        </button>
+        <button type="button" class="login-role-tab" onclick="switchLoginMode('hod')">
+          <span>🏛️</span> HOD
+        </button>
+      </div>
+
+      <!-- Quick Demo Credentials Helper -->
+      <div class="login-quick-demo-pill" id="demoHelperBox" onclick="applyDemoCredentials()">
+        ⚡ Click to autofill sample <strong>Student (Year 3)</strong> login
+      </div>
+
+      <form id="authForm" onsubmit="submitAuth(event)">
+        <div class="portal-form-group">
+          <label class="portal-form-label" for="usernameField">User ID / Register No.</label>
+          <input type="text" id="usernameField" class="portal-form-input" placeholder="e.g. 2023CSE1234" required autocomplete="username">
+        </div>
+
+        <div class="portal-form-group">
+          <label class="portal-form-label" for="passwordField">Account Password</label>
+          <input type="password" id="passwordField" class="portal-form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <div id="authErrorMessage" style="color: var(--portal-danger-text); background: var(--portal-danger-bg); border: 1px solid var(--portal-danger-border); padding: 10px 12px; border-radius: var(--portal-radius-md); font-size: 0.825rem; margin-bottom: 16px; display: none;"></div>
+
+        <button type="submit" class="portal-btn portal-btn--primary portal-btn--block portal-btn--lg" id="submitAuthBtn" style="padding: 12px; font-weight: 700; letter-spacing: 0.01em;">
+          <span id="submitAuthBtnLabel">Sign In to Dashboard →</span>
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="javascript:void(0)" onclick="promptForgotPass()" style="font-size: 0.825rem; color: var(--portal-slate-500); text-decoration: none;">Forgot password or need administrative access?</a>
+      </div>
     </div>
   </div>
 
@@ -74,13 +385,13 @@
 
       if (mode === 'student') {
         userField.placeholder = 'e.g. 2023CSE1234';
-        demoBox.innerHTML = 'Click to fill sample <strong>Student</strong> credentials (Year 3)';
+        demoBox.innerHTML = '⚡ Click to autofill sample <strong>Student (Year 3)</strong> login';
       } else if (mode === 'mentor') {
         userField.placeholder = 'e.g. STAFF101';
-        demoBox.innerHTML = 'Click to fill sample <strong>Mentor</strong> credentials (Dr. Anitha)';
+        demoBox.innerHTML = '⚡ Click to autofill sample <strong>Faculty Mentor (Dr. Anitha)</strong> login';
       } else {
         userField.placeholder = 'e.g. ADMIN001';
-        demoBox.innerHTML = 'Click to fill sample <strong>HOD / Admin</strong> credentials';
+        demoBox.innerHTML = '⚡ Click to autofill sample <strong>HOD / Administrator</strong> login';
       }
     }
 
@@ -119,20 +430,20 @@
         errorMsg.textContent = res?.error || 'Invalid credentials. Please try again.';
         errorMsg.style.display = 'block';
         btn.disabled = false;
-        btnLabel.textContent = 'Sign In to Portal';
+        btnLabel.textContent = 'Sign In to Dashboard →';
       }
     }
 
     function promptForgotPass() {
       openPortalModal(
-        'Password Recovery Support',
-        `<p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:14px;">Please enter your institutional Register Number or Staff ID to receive a password reset link from campus IT.</p>
+        'Institutional Access Support',
+        `<p style="font-size:0.875rem; color:var(--portal-slate-600); margin-bottom:14px;">Enter your institutional Register Number or Staff ID to trigger a recovery link from the campus examination center.</p>
          <div class="portal-form-group">
-           <label class="portal-form-label">User ID</label>
-           <input type="text" class="portal-form-input" id="recoveryUser" placeholder="e.g. 2023CSE1234">
+           <label class="portal-form-label">User ID / Staff ID</label>
+           <input type="text" class="portal-form-input" id="recoveryUser" placeholder="e.g. 2023CSE1234 or STAFF101">
          </div>`,
         `<button class="portal-btn portal-btn--outline" onclick="closePortalModal()">Cancel</button>
-         <button class="portal-btn portal-btn--primary" onclick="alert('Recovery instructions sent to institutional email.'); closePortalModal();">Send Recovery Email</button>`
+         <button class="portal-btn portal-btn--primary" onclick="alert('Recovery instructions sent to institutional email.'); closePortalModal();">Send Recovery Request</button>`
       );
     }
   </script>
