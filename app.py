@@ -1,10 +1,10 @@
 """
 app.py - Flask Backend for Student Certification Portal
 Features:
-  - Role-based Authentication & Session Management
-  - RESTful APIs for Certificates, Analytics, Notifications
-  - Machine Learning & NLP Endpoints (Integrity Score, Career Radar, OCR Metadata Extractor)
-  - Dedicated Staff Review & Broadcast Notification Endpoints
+  - Role-based Authentication & Session Management (Student, Mentor/Staff, HOD/Admin)
+  - Dedicated Mentor Profile & Scoped Verification Queue for Assigned Mentees
+  - Comprehensive HOD Console: Year-wise Student Categorization, Full Dossiers, CRUD Operations & Flexible Mentor Assignment
+  - RESTful APIs for Certificates, Analytics, Notifications & Machine Learning / OCR
 """
 
 import os
@@ -27,6 +27,9 @@ app.secret_key = 'student-portal-secret-key-2025'
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -54,10 +57,25 @@ def staff_required(f):
             if request.is_json or request.path.startswith('/api/'):
                 return jsonify({"error": "Authentication required"}), 401
             return redirect('/')
-        if session.get('role') not in ('staff', 'admin'):
+        if session.get('role') not in ('staff', 'admin', 'hod'):
             if request.is_json or request.path.startswith('/api/'):
-                return jsonify({"error": "Staff access required"}), 403
+                return jsonify({"error": "Faculty or Administrative access required"}), 403
             return redirect('/student_dashboard.html')
+        return f(*args, **kwargs)
+    return decorated
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({"error": "Authentication required"}), 401
+            return redirect('/')
+        if session.get('role') not in ('admin', 'hod'):
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({"error": "HOD / Administrative privileges required"}), 403
+            return redirect('/staff_dashboard.html')
         return f(*args, **kwargs)
     return decorated
 
@@ -128,6 +146,12 @@ def staff_notifications_page():
     return send_from_directory(TEMPLATES_DIR, 'staff_notifications.html')
 
 
+@app.route('/hod_management.html')
+@staff_required
+def hod_management_page():
+    return send_from_directory(TEMPLATES_DIR, 'hod_management.html')
+
+
 # ── Serve Uploaded Files & Root Static ────────────────────────────
 @app.route('/uploads/<path:filename>')
 @login_required
@@ -166,25 +190,26 @@ def api_login():
 
     user = database.authenticate_user(username, password)
     if not user:
-        return jsonify({"error": "Invalid registration number or password"}), 401
+        return jsonify({"error": "Invalid User ID / Registration Number or Password"}), 401
 
     session['user_id'] = user['id']
     session['username'] = user['username']
     session['role'] = user['role']
     session['full_name'] = user['full_name']
     session['department'] = user['department']
+    session['year'] = user.get('year', 1)
+    session['mentor_id'] = user.get('mentor_id')
 
-    redirect_url = '/staff_dashboard.html' if user['role'] in ('staff', 'admin') else '/student_dashboard.html'
+    redirect_url = '/student_dashboard.html'
+    if user['role'] in ('admin', 'hod'):
+        redirect_url = '/hod_management.html'
+    elif user['role'] == 'staff':
+        redirect_url = '/staff_dashboard.html'
 
     return jsonify({
         "success": True,
-        "user": {
-            "id": user['id'],
-            "username": user['username'],
-            "full_name": user['full_name'],
-            "role": user['role'],
-            "department": user['department']
-        },
+        "role": user['role'],
+        "full_name": user['full_name'],
         "redirect": redirect_url
     })
 
@@ -195,7 +220,7 @@ def api_logout():
     return jsonify({"success": True})
 
 
-@app.route('/api/auth/me')
+@app.route('/api/auth/me', methods=['GET'])
 @login_required
 def api_me():
     user = database.get_user_by_id(session['user_id'])
@@ -209,7 +234,12 @@ def api_me():
         "email": user['email'],
         "phone": user['phone'],
         "department": user['department'],
-        "role": user['role']
+        "role": user['role'],
+        "year": user.get('year', 1),
+        "mentor_id": user.get('mentor_id'),
+        "mentor_name": user.get('mentor_name'),
+        "mentor_email": user.get('mentor_email'),
+        "designation": user.get('designation')
     })
 
 
@@ -240,6 +270,240 @@ def api_change_password():
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  MENTOR SPECIFIC APIS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/mentor/mentees', methods=['GET'])
+@staff_required
+def api_mentor_mentees():
+    """Fetch students assigned to the currently logged in mentor."""
+    mentor_id = session['user_id']
+    if session.get('role') in ('admin', 'hod'):
+        target_mid = request.args.get('mentor_id', type=int)
+        if target_mid:
+            mentor_id = target_mid
+    students = database.get_students_by_mentor(mentor_id)
+    return jsonify(students)
+
+
+@app.route('/api/mentor/stats', methods=['GET'])
+@staff_required
+def api_mentor_stats():
+    """Fetch statistics strictly for the logged in mentor's assigned students."""
+    mentor_id = session['user_id']
+    if session.get('role') in ('admin', 'hod'):
+        target_mid = request.args.get('mentor_id', type=int)
+        if target_mid:
+            mentor_id = target_mid
+    stats = database.get_mentor_stats(mentor_id)
+    return jsonify(stats)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  HOD / ADMIN STUDENT & STAFF MANAGEMENT APIS (CRUD)
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/hod/students', methods=['GET'])
+@staff_required
+def api_hod_students_list():
+    """Fetch students categorized year-wise with mentor & certificate metrics."""
+    year = request.args.get('year')
+    dept = request.args.get('department')
+    mentor_id = request.args.get('mentor_id')
+    search = request.args.get('search')
+    students = database.get_students_yearwise(dept=dept, year=year, mentor_id=mentor_id, search=search)
+    return jsonify(students)
+
+
+@app.route('/api/hod/students/<int:student_id>', methods=['GET'])
+@staff_required
+def api_hod_student_dossier(student_id):
+    """Fetch complete student dossier including certificates history & mentor details."""
+    dossier = database.get_student_full_profile(student_id)
+    if not dossier:
+        return jsonify({"error": "Student record not found"}), 404
+    return jsonify(dossier)
+
+
+@app.route('/api/hod/students', methods=['POST'])
+@staff_required
+def api_hod_create_student():
+    """Add a new student with year and assigned mentor."""
+    data = request.get_json() or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    full_name = data.get('full_name', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    dept = data.get('department', '').strip()
+    year = data.get('year', 1)
+    mentor_id = data.get('mentor_id')
+
+    if not username or not password or not full_name:
+        return jsonify({"error": "Registration Number, Password, and Full Name are required"}), 400
+
+    try:
+        student_id = database.create_student(
+            username=username,
+            password=password,
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            department=dept,
+            year=year,
+            mentor_id=mentor_id if mentor_id else None
+        )
+        return jsonify({"success": True, "student_id": student_id})
+    except Exception as e:
+        return jsonify({"error": f"Failed to create student: {str(e)}"}), 400
+
+
+@app.route('/api/hod/students/<int:student_id>', methods=['PUT'])
+@staff_required
+def api_hod_update_student(student_id):
+    """Update student details, academic year, and mentor reassignment."""
+    data = request.get_json() or {}
+    full_name = data.get('full_name', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    dept = data.get('department', '').strip()
+    year = data.get('year', 1)
+    mentor_id = data.get('mentor_id')
+    password = data.get('password', '').strip()
+
+    if not full_name:
+        return jsonify({"error": "Full Name is required"}), 400
+
+    try:
+        database.update_student(
+            student_id=student_id,
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            department=dept,
+            year=year,
+            mentor_id=mentor_id if mentor_id else None,
+            password=password if password else None
+        )
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": f"Failed to update student: {str(e)}"}), 400
+
+
+@app.route('/api/hod/students/<int:student_id>', methods=['DELETE'])
+@staff_required
+def api_hod_delete_student(student_id):
+    """Delete student and their associated submissions."""
+    try:
+        database.delete_student(student_id)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete student: {str(e)}"}), 400
+
+
+@app.route('/api/hod/staff', methods=['GET'])
+@staff_required
+def api_hod_staff_list():
+    """Fetch all staff / mentors with active mentee counts."""
+    staff = database.get_all_mentors()
+    return jsonify(staff)
+
+
+@app.route('/api/hod/staff', methods=['POST'])
+@staff_required
+def api_hod_create_staff():
+    """Create a new faculty / mentor / HOD profile."""
+    data = request.get_json() or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    full_name = data.get('full_name', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    dept = data.get('department', '').strip()
+    designation = data.get('designation', 'Assistant Professor & Student Mentor').strip()
+    role = data.get('role', 'staff').strip()
+
+    if not username or not password or not full_name:
+        return jsonify({"error": "Staff ID, Password, and Full Name are required"}), 400
+
+    try:
+        staff_id = database.create_staff(
+            username=username,
+            password=password,
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            department=dept,
+            designation=designation,
+            role=role
+        )
+        return jsonify({"success": True, "staff_id": staff_id})
+    except Exception as e:
+        return jsonify({"error": f"Failed to create staff: {str(e)}"}), 400
+
+
+@app.route('/api/hod/staff/<int:staff_id>', methods=['PUT'])
+@staff_required
+def api_hod_update_staff(staff_id):
+    """Update faculty / staff profile."""
+    data = request.get_json() or {}
+    full_name = data.get('full_name', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    dept = data.get('department', '').strip()
+    designation = data.get('designation', 'Assistant Professor').strip()
+    role = data.get('role', 'staff').strip()
+    password = data.get('password', '').strip()
+
+    if not full_name:
+        return jsonify({"error": "Full Name is required"}), 400
+
+    try:
+        database.update_staff(
+            staff_id=staff_id,
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            department=dept,
+            designation=designation,
+            role=role,
+            password=password if password else None
+        )
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": f"Failed to update staff: {str(e)}"}), 400
+
+
+@app.route('/api/hod/staff/<int:staff_id>', methods=['DELETE'])
+@staff_required
+def api_hod_delete_staff(staff_id):
+    """Delete a staff member and unassign their mentees."""
+    try:
+        database.delete_staff(staff_id)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete staff: {str(e)}"}), 400
+
+
+@app.route('/api/hod/assign-mentor', methods=['POST'])
+@staff_required
+def api_hod_assign_mentor():
+    """Assign or reassign a student to any mentor."""
+    data = request.get_json() or {}
+    student_id = data.get('student_id')
+    mentor_id = data.get('mentor_id')
+
+    if not student_id:
+        return jsonify({"error": "Student ID is required"}), 400
+
+    try:
+        database.assign_student_mentor(int(student_id), int(mentor_id) if mentor_id else None)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": f"Failed to assign mentor: {str(e)}"}), 400
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  CERTIFICATES API
 # ═══════════════════════════════════════════════════════════════════
 
@@ -247,10 +511,15 @@ def api_change_password():
 @login_required
 def api_get_certificates():
     status = request.args.get('status')
-    if session.get('role') in ('staff', 'admin'):
-        certs = database.get_all_certificates(status)
+    user_role = session.get('role')
+
+    if user_role in ('admin', 'hod'):
+        certs = database.get_all_certificates(status=status, role='admin')
+    elif user_role == 'staff':
+        # Mentor: Strictly only return certificates of students assigned to this mentor
+        certs = database.get_all_certificates(status=status, reviewer_id=session['user_id'], role='staff')
     else:
-        certs = database.get_certificates_for_user(session['user_id'], status)
+        certs = database.get_certificates_for_user(session['user_id'], status=status)
 
     for cert in certs:
         if cert.get('integrity_details') and isinstance(cert['integrity_details'], str):
@@ -324,6 +593,7 @@ def api_add_certificate():
     )
 
     cert = database.get_certificate_by_id(cert_id)
+    integrity_result = {"overall_score": 0, "risk_level": "Unscored"}
     if cert:
         integrity_result = ml_engine.compute_integrity_risk_score(cert)
         database.update_certificate_integrity(
@@ -332,13 +602,15 @@ def api_add_certificate():
             json.dumps(integrity_result['dimensions'])
         )
 
-    # Notify faculty
+    # Notify student's mentor & faculty
+    mentor_user_id = session.get('mentor_id')
     database.add_notification(
         title=f"New Submission: {title}",
-        body=f"Student {session.get('full_name', 'Student')} uploaded '{title}'. AI Confidence Index: {integrity_result['overall_score']}/100 ({integrity_result['risk_level']} Risk).",
+        body=f"Student {session.get('full_name', 'Student')} (Year {session.get('year', 1)}) submitted '{title}'. AI Confidence Score: {integrity_result['overall_score']}/100.",
         category='submission',
         priority='normal',
         target_role='staff',
+        target_user_id=mentor_user_id,
         author_id=session['user_id']
     )
 
@@ -368,7 +640,7 @@ def api_review_certificate(cert_id):
 
     database.add_notification(
         title=f"Certificate Review: {cert['title']} - {status.upper()}",
-        body=f"Your submission for '{cert['title']}' was reviewed by {session.get('full_name', 'Faculty')}. Status: {status.title()}. Comments: {feedback or 'Verified according to institutional guidelines.'}",
+        body=f"Your submission for '{cert['title']}' was reviewed by {session.get('full_name', 'Mentor')}. Status: {status.title()}. Comments: {feedback or 'Verified according to institutional guidelines.'}",
         category='review',
         priority='high',
         target_role='student',
@@ -391,14 +663,14 @@ def api_certificate_integrity(cert_id):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  MACHINE LEARNING & INTELLIGENCE API
+#  MACHINE LEARNING & NLP API
 # ═══════════════════════════════════════════════════════════════════
 
 @app.route('/api/ml/predict-career')
 @login_required
 def api_predict_career():
     user_id = session['user_id']
-    if session.get('role') in ('staff', 'admin'):
+    if session.get('role') in ('staff', 'admin', 'hod'):
         user_id = request.args.get('user_id', user_id, type=int)
 
     certs = database.get_certificates_for_user(user_id, status='approved')
@@ -443,8 +715,15 @@ def api_extract_metadata():
 @app.route('/api/analytics/summary')
 @login_required
 def api_analytics_summary():
-    if session.get('role') in ('staff', 'admin'):
+    user_role = session.get('role')
+    if user_role in ('admin', 'hod'):
         return jsonify(database.get_global_stats())
+    elif user_role == 'staff':
+        # Return mentor-specific stats + global benchmark
+        mentor_stats = database.get_mentor_stats(session['user_id'])
+        global_stats = database.get_global_stats()
+        mentor_stats['global_benchmark'] = global_stats
+        return jsonify(mentor_stats)
     else:
         return jsonify(database.get_user_stats(session['user_id']))
 
@@ -452,8 +731,11 @@ def api_analytics_summary():
 @app.route('/api/analytics/integrity-overview')
 @login_required
 def api_integrity_overview():
-    if session.get('role') in ('staff', 'admin'):
-        certs = database.get_all_certificates()
+    user_role = session.get('role')
+    if user_role in ('admin', 'hod'):
+        certs = database.get_all_certificates(role='admin')
+    elif user_role == 'staff':
+        certs = database.get_all_certificates(reviewer_id=session['user_id'], role='staff')
     else:
         certs = database.get_certificates_for_user(session['user_id'])
 
@@ -533,7 +815,7 @@ def api_mark_notification_read(notif_id):
 @app.route('/api/students/list')
 @staff_required
 def api_students_list():
-    students = database.get_students_list()
+    students = database.get_students_yearwise()
     return jsonify(students)
 
 
@@ -549,6 +831,7 @@ if __name__ == '__main__':
     database.init_db()
     print("[START] CertPortal Professional Campus Server starting...")
     print("   Server URL: http://localhost:5000")
-    print("   Student Demo: 2023CSE1234 / password123")
-    print("   Staff Demo:   STAFF101 / staff123")
+    print("   Student Demo: 2023CSE1234 / password123 (Year 3)")
+    print("   Mentor Demo:  STAFF101 / staff123 (Assigned Mentees in Y2, Y3)")
+    print("   HOD Demo:     ADMIN001 / admin123 (Full Year-Wise Management Console)")
     app.run(debug=True, host='0.0.0.0', port=5000)

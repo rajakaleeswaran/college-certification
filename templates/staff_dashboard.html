@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Faculty Overview & Analytics — CertPortal</title>
+  <title>Faculty & Mentor Analytics — CertPortal</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
@@ -12,17 +12,23 @@
   <main class="portal-container">
     <div class="portal-page-header">
       <div class="portal-page-header__left">
-        <h1 class="portal-page-title">Faculty Administration & Analytics</h1>
-        <p class="portal-page-description">Institutional metrics, student credential verification velocity, and departmental skill distributions.</p>
+        <h1 class="portal-page-title" id="dashboardHeroTitle">Faculty Administration & Analytics</h1>
+        <p class="portal-page-description" id="dashboardHeroSub">Institutional metrics, student credential verification velocity, and departmental skill distributions.</p>
       </div>
       <div class="portal-page-actions">
+        <div id="hodBannerAction" style="display: none;">
+          <a href="/hod_management.html" class="portal-btn portal-btn--brand">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            Open HOD Console
+          </a>
+        </div>
         <a href="/staff_reviews.html" class="portal-btn portal-btn--primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-          Open Verification Queue
+          Verification Queue
         </a>
         <a href="/staff_notifications.html" class="portal-btn portal-btn--outline">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path><circle cx="12" cy="12" r="2"></circle><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"></path></svg>
-          Broadcast Announcement
+          Broadcast Center
         </a>
       </div>
     </div>
@@ -35,7 +41,7 @@
         </div>
         <div>
           <div class="portal-stat-card__value" id="statStudentsCount">0</div>
-          <div class="portal-stat-card__label">Enrolled Students</div>
+          <div class="portal-stat-card__label" id="statStudentsLabel">Enrolled Students</div>
         </div>
       </div>
 
@@ -55,7 +61,7 @@
         </div>
         <div>
           <div class="portal-stat-card__value" id="statApprovedCount">0</div>
-          <div class="portal-stat-card__label">Verified Certificates</div>
+          <div class="portal-stat-card__label">Verified Credentials</div>
         </div>
       </div>
 
@@ -65,7 +71,39 @@
         </div>
         <div>
           <div class="portal-stat-card__value" id="statAvgIntegrity">0%</div>
-          <div class="portal-stat-card__label">Avg Institutional Integrity</div>
+          <div class="portal-stat-card__label">Avg AI Integrity Index</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dedicated Mentees Roster Section (For Mentors) -->
+    <div id="mentorMenteesSection" style="margin-bottom: 24px; display: none;">
+      <div class="portal-card">
+        <div class="portal-card__header">
+          <div>
+            <div class="portal-card__title">My Assigned Mentees Directory</div>
+            <p style="font-size: 0.8rem; color: var(--portal-slate-500); margin-top: 2px;">Students assigned across academic years under your faculty mentorship.</p>
+          </div>
+          <span class="portal-badge portal-badge--brand" id="mentorMenteesCountPill">0 Mentees</span>
+        </div>
+        <div class="portal-card__body" style="padding: 0;">
+          <div style="overflow-x: auto;">
+            <table class="portal-table" style="width: 100%; font-size: 0.875rem;">
+              <thead>
+                <tr>
+                  <th style="padding: 12px 16px;">Mentee Name & Reg No</th>
+                  <th style="padding: 12px 16px;">Academic Year</th>
+                  <th style="padding: 12px 16px;">Department</th>
+                  <th style="padding: 12px 16px;">Credentials (Approved / Pending)</th>
+                  <th style="padding: 12px 16px;">Avg Integrity</th>
+                  <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="mentorMenteesTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--portal-slate-400);">Loading your assigned mentees...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -75,7 +113,7 @@
       <div class="portal-card">
         <div class="portal-card__header">
           <div class="portal-card__title">Monthly Submissions Timeline</div>
-          <span class="portal-badge portal-badge--neutral">Campus-Wide</span>
+          <span class="portal-badge portal-badge--neutral">Trend Velocity</span>
         </div>
         <div class="portal-card__body" style="height: 270px;">
           <canvas id="facultyTrendChart"></canvas>
@@ -84,7 +122,7 @@
 
       <div class="portal-card">
         <div class="portal-card__header">
-          <div class="portal-card__title">Certifications by Department</div>
+          <div class="portal-card__title" id="cohortChartTitle">Certifications Breakdown</div>
         </div>
         <div class="portal-card__body" style="height: 270px;">
           <canvas id="facultyDeptChart"></canvas>
@@ -121,25 +159,48 @@
       const user = await initPortal('/staff_dashboard.html');
       if (!user) return;
 
+      const isHod = (user.role === 'admin' || user.role === 'hod');
+
+      if (isHod) {
+        document.getElementById('hodBannerAction').style.display = 'block';
+        document.getElementById('dashboardHeroTitle').textContent = 'HOD Campus Analytics & Overview';
+        document.getElementById('dashboardHeroSub').textContent = 'Institutional cohort analytics, department-wide metrics, and verification velocity.';
+      } else {
+        document.getElementById('dashboardHeroTitle').textContent = `Faculty Mentor Portal — ${user.full_name}`;
+        document.getElementById('dashboardHeroSub').textContent = `Overview of your assigned student mentees, pending certificate audits, and academic verification.`;
+        document.getElementById('statStudentsLabel').textContent = 'My Assigned Mentees';
+        document.getElementById('mentorMenteesSection').style.display = 'block';
+        loadMentorMentees();
+      }
+
       const [stats, integrity] = await Promise.all([
         API.get('/api/analytics/summary'),
         API.get('/api/analytics/integrity-overview')
       ]);
 
       if (stats) {
-        document.getElementById('statStudentsCount').textContent = stats.total_students || 0;
-        document.getElementById('statPendingReviews').textContent = stats.pending_reviews || 0;
-        document.getElementById('statApprovedCount').textContent = stats.approved || 0;
-        document.getElementById('statAvgIntegrity').textContent = `${stats.avg_integrity || 0}%`;
+        if (!isHod && stats.total_mentees !== undefined) {
+          document.getElementById('statStudentsCount').textContent = stats.total_mentees || 0;
+          document.getElementById('statPendingReviews').textContent = stats.pending_reviews || 0;
+          document.getElementById('statApprovedCount').textContent = stats.approved_certs || 0;
+          document.getElementById('statAvgIntegrity').textContent = `${stats.avg_integrity || 0}%`;
+        } else {
+          document.getElementById('statStudentsCount').textContent = stats.total_students || 0;
+          document.getElementById('statPendingReviews').textContent = stats.pending_reviews || 0;
+          document.getElementById('statApprovedCount').textContent = stats.approved || 0;
+          document.getElementById('statAvgIntegrity').textContent = `${stats.avg_integrity || 0}%`;
+        }
 
-        // Monthly Trend
-        if (stats.monthly_trend && stats.monthly_trend.length > 0) {
+        // Global benchmark / Monthly Trend
+        const globalData = stats.global_benchmark || stats;
+
+        if (globalData.monthly_trend && globalData.monthly_trend.length > 0) {
           createLineChart(
             'facultyTrendChart',
-            stats.monthly_trend.map(m => m.month),
+            globalData.monthly_trend.map(m => m.month),
             [{
-              label: 'Student Submissions',
-              data: stats.monthly_trend.map(m => m.count),
+              label: 'Submissions',
+              data: globalData.monthly_trend.map(m => m.count),
               borderColor: THEME_COLORS.brand,
               backgroundColor: 'rgba(13, 148, 136, 0.08)',
               fill: true
@@ -147,19 +208,28 @@
           );
         }
 
-        // Department Doughnut
-        if (stats.by_department && stats.by_department.length > 0) {
+        // Year / Department Doughnut
+        if (!isHod && stats.mentees_by_year && Object.keys(stats.mentees_by_year).length > 0) {
+          document.getElementById('cohortChartTitle').textContent = 'My Mentees by Academic Year';
           createDoughnutChart(
             'facultyDeptChart',
-            stats.by_department.map(d => d.department.split(' ')[0]),
-            stats.by_department.map(d => d.cert_count),
+            Object.keys(stats.mentees_by_year),
+            Object.values(stats.mentees_by_year),
+            [THEME_COLORS.brand, THEME_COLORS.accent, THEME_COLORS.warning, THEME_COLORS.success]
+          );
+        } else if (globalData.by_department && globalData.by_department.length > 0) {
+          document.getElementById('cohortChartTitle').textContent = 'Certifications by Department';
+          createDoughnutChart(
+            'facultyDeptChart',
+            globalData.by_department.map(d => d.department.split(' ')[0]),
+            globalData.by_department.map(d => d.cert_count),
             [THEME_COLORS.brand, THEME_COLORS.accent, THEME_COLORS.warning, THEME_COLORS.success, '#8b5cf6']
           );
         }
 
         // Top Skills Horizontal Bar
-        if (stats.top_skills) {
-          const entries = Object.entries(stats.top_skills).slice(0, 8);
+        if (globalData.top_skills) {
+          const entries = Object.entries(globalData.top_skills).slice(0, 8);
           createHorizontalBarChart(
             'facultySkillsChart',
             entries.map(e => e[0]),
@@ -178,6 +248,43 @@
           ['#10b981', '#f59e0b', '#ef4444', '#7f1d1d']
         );
       }
+    }
+
+    async function loadMentorMentees() {
+      const mentees = await API.get('/api/mentor/mentees') || [];
+      document.getElementById('mentorMenteesCountPill').textContent = `${mentees.length} Mentees`;
+      const tbody = document.getElementById('mentorMenteesTableBody');
+
+      if (mentees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--portal-slate-400);">No mentees currently assigned to your mentorship profile.</td></tr>`;
+        return;
+      }
+
+      const yearNames = { 1: '1st Year', 2: '2nd Year', 3: '3rd Year', 4: '4th Year' };
+
+      tbody.innerHTML = mentees.map(s => `
+        <tr>
+          <td style="padding: 12px 16px;">
+            <strong>${escapeHtml(s.full_name)}</strong>
+            <div style="font-size: 0.75rem; color: var(--portal-slate-500); font-family: monospace;">${escapeHtml(s.username)}</div>
+          </td>
+          <td style="padding: 12px 16px;"><span class="portal-badge portal-badge--brand">${yearNames[s.year] || `Year ${s.year}`}</span></td>
+          <td style="padding: 12px 16px;">${escapeHtml(s.department || 'General')}</td>
+          <td style="padding: 12px 16px;">
+            <span class="portal-badge portal-badge--info">Total: ${s.total_certs || 0}</span>
+            <span class="portal-badge portal-badge--success">✓ ${s.approved_certs || 0}</span>
+            ${s.pending_certs > 0 ? `<span class="portal-badge portal-badge--warning">⏳ ${s.pending_certs} Pending</span>` : ''}
+          </td>
+          <td style="padding: 12px 16px;">
+            ${s.avg_integrity ? `<span class="portal-badge portal-badge--success">${s.avg_integrity}%</span>` : '<span style="color:var(--portal-slate-400); font-size:0.8rem;">-</span>'}
+          </td>
+          <td style="padding: 12px 16px; text-align: right;">
+            <a href="/staff_reviews.html" class="portal-btn portal-btn--outline" style="padding: 4px 10px; font-size: 0.8rem;">
+              Review Submissions
+            </a>
+          </td>
+        </tr>
+      `).join('');
     }
 
     loadFacultyOverview();

@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOD Management Console — CertPortal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .hod-tabs-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--portal-slate-200);
+      padding-bottom: 2px;
+      overflow-x: auto;
+    }
+    .hod-tab-btn {
+      padding: 10px 18px;
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--portal-slate-500);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      margin-bottom: -2px;
+    }
+    .hod-tab-btn:hover {
+      color: var(--portal-brand-600);
+    }
+    .hod-tab-btn.is-active {
+      color: var(--portal-brand-600);
+      border-bottom-color: var(--portal-brand-600);
+      background: var(--portal-brand-50, #f0fdfa);
+      border-radius: 8px 8px 0 0;
+    }
+    .hod-tab-pill {
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--portal-slate-200);
+      color: var(--portal-slate-700);
+    }
+    .hod-tab-btn.is-active .hod-tab-pill {
+      background: var(--portal-brand-600);
+      color: #ffffff;
+    }
+    .hod-table-container {
+      background: #ffffff;
+      border-radius: var(--portal-radius-xl);
+      border: 1px solid var(--portal-slate-200);
+      box-shadow: var(--portal-shadow-sm);
+      overflow-x: auto;
+    }
+    .hod-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .hod-data-table th {
+      background: var(--portal-slate-50);
+      color: var(--portal-slate-600);
+      font-weight: 600;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--portal-slate-200);
+      font-size: 0.825rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .hod-data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--portal-slate-100);
+      color: var(--portal-slate-800);
+      vertical-align: middle;
+    }
+    .hod-data-table tr:hover {
+      background: var(--portal-slate-50);
+    }
+    .hod-mentor-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.825rem;
+      font-weight: 500;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .hod-mentor-tag--unassigned {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .hod-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .hod-modal-card {
+      background: #ffffff;
+      border-radius: var(--portal-radius-xl);
+      max-width: 720px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--portal-shadow-xl);
+      animation: modalSlide 0.2s ease-out;
+    }
+    .hod-modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--portal-slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hod-modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .hod-modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--portal-slate-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: var(--portal-slate-50);
+      border-radius: 0 0 var(--portal-radius-xl) var(--portal-radius-xl);
+    }
+    @keyframes modalSlide {
+      from { transform: translateY(15px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .hod-cert-item {
+      padding: 12px 16px;
+      background: var(--portal-slate-50);
+      border: 1px solid var(--portal-slate-200);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body class="portal-body">
+
+  <main class="portal-container">
+    <!-- Header -->
+    <div class="portal-page-header">
+      <div class="portal-page-header__left">
+        <h1 class="portal-page-title">HOD Management & Academic Governance</h1>
+        <p class="portal-page-description">Institutional cohort overview categorized year-wise, flexible faculty mentor assignment, and student lifecycle management.</p>
+      </div>
+      <div class="portal-page-actions">
+        <button type="button" class="portal-btn portal-btn--primary" onclick="openAddStudentModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add Student
+        </button>
+        <button type="button" class="portal-btn portal-btn--outline" onclick="openAddStaffModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          Add Faculty / Mentor
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="portal-grid-4" style="margin-bottom: 24px;">
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--brand">🎓</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="statTotalStudents">0</div>
+          <div class="portal-stat-card__label">Total Enrolled Students</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--accent">👨‍🏫</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="statTotalFaculty">0</div>
+          <div class="portal-stat-card__label">Faculty Mentors</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--success">✓</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="statTotalCerts">0</div>
+          <div class="portal-stat-card__label">Total Credentials</div>
+        </div>
+      </div>
+
+      <div class="portal-stat-card">
+        <div class="portal-stat-card__top">
+          <div class="portal-stat-card__icon portal-stat-card__icon--warning">⏳</div>
+        </div>
+        <div>
+          <div class="portal-stat-card__value" id="statPendingCerts">0</div>
+          <div class="portal-stat-card__label">Pending Verifications</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Tabs (Year-wise + Staff) -->
+    <div class="hod-tabs-bar">
+      <button class="hod-tab-btn is-active" onclick="switchMainTab('all', this)">
+        <span>All Academic Years</span>
+        <span class="hod-tab-pill" id="tabCountAll">0</span>
+      </button>
+      <button class="hod-tab-btn" onclick="switchMainTab('1', this)">
+        <span>1st Year (Freshman)</span>
+        <span class="hod-tab-pill" id="tabCount1">0</span>
+      </button>
+      <button class="hod-tab-btn" onclick="switchMainTab('2', this)">
+        <span>2nd Year (Sophomore)</span>
+        <span class="hod-tab-pill" id="tabCount2">0</span>
+      </button>
+      <button class="hod-tab-btn" onclick="switchMainTab('3', this)">
+        <span>3rd Year (Junior)</span>
+        <span class="hod-tab-pill" id="tabCount3">0</span>
+      </button>
+      <button class="hod-tab-btn" onclick="switchMainTab('4', this)">
+        <span>4th Year (Senior)</span>
+        <span class="hod-tab-pill" id="tabCount4">0</span>
+      </button>
+      <button class="hod-tab-btn" onclick="switchMainTab('faculty', this)" style="margin-left: auto;">
+        <span>Faculty & Mentors Directory</span>
+        <span class="hod-tab-pill" id="tabCountFaculty">0</span>
+      </button>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="portal-toolbar" id="studentsFilterToolbar">
+      <div class="portal-search-box">
+        <span class="portal-search-box__icon">🔍</span>
+        <input type="text" id="hodSearchInput" class="portal-search-box__input" placeholder="Search by name, register number, or email..." oninput="applyFilters()">
+      </div>
+
+      <select id="hodDeptFilter" class="portal-form-select" style="width: auto;" onchange="applyFilters()">
+        <option value="All">All Departments</option>
+      </select>
+
+      <select id="hodMentorFilter" class="portal-form-select" style="width: auto;" onchange="applyFilters()">
+        <option value="All">All Assigned Mentors</option>
+      </select>
+    </div>
+
+    <!-- Student Table View -->
+    <div id="studentsSection">
+      <div class="hod-table-container">
+        <table class="hod-data-table">
+          <thead>
+            <tr>
+              <th>Student Details</th>
+              <th>Department & Year</th>
+              <th>Assigned Mentor</th>
+              <th>Certificates (Approved / Pending)</th>
+              <th>Integrity</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTableBody">
+            <tr>
+              <td colspan="6" style="text-align:center; padding: 32px; color: var(--portal-slate-400);">Loading students directory...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Faculty & Mentors Section -->
+    <div id="facultySection" style="display: none;">
+      <div class="hod-table-container">
+        <table class="hod-data-table">
+          <thead>
+            <tr>
+              <th>Faculty Name & ID</th>
+              <th>Department</th>
+              <th>Academic Designation</th>
+              <th>Role</th>
+              <th>Assigned Mentees Count</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="facultyTableBody">
+            <tr>
+              <td colspan="6" style="text-align:center; padding: 32px; color: var(--portal-slate-400);">Loading faculty directory...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: Full Student Dossier Inspection -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="hod-modal-overlay" id="dossierModal">
+    <div class="hod-modal-card" style="max-width: 800px;">
+      <div class="hod-modal-header">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--portal-slate-900);" id="dossierStudentName">Student Dossier</h2>
+          <p style="font-size: 0.85rem; color: var(--portal-slate-500); margin-top: 2px;" id="dossierStudentSub">Reg No & Academic Details</p>
+        </div>
+        <button type="button" class="portal-btn portal-btn--outline" style="padding: 6px 12px;" onclick="closeModal('dossierModal')">✕ Close</button>
+      </div>
+
+      <div class="hod-modal-body">
+        <!-- Student Info Header Card -->
+        <div style="display: flex; gap: 20px; align-items: center; background: var(--portal-slate-50); padding: 18px; border-radius: var(--portal-radius-lg); margin-bottom: 20px; border: 1px solid var(--portal-slate-200);">
+          <div class="portal-avatar-circle" id="dossierAvatar" style="width: 56px; height: 56px; font-size: 1.3rem;">ST</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 style="font-size: 1.1rem; font-weight: 700;" id="dossierFullName">-</h3>
+              <span class="portal-badge portal-badge--brand" id="dossierYearBadge">Year 1</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--portal-slate-600); margin-top: 4px;" id="dossierContactMeta">
+              dept • email • phone
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--portal-slate-500); font-weight: 600;">Assigned Mentor</div>
+            <div class="hod-mentor-tag" id="dossierMentorTag" style="margin-top: 4px;">👨‍🏫 Mentor Name</div>
+          </div>
+        </div>
+
+        <!-- Reassign Mentor Quick Control -->
+        <div style="display: flex; gap: 12px; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px dashed var(--portal-slate-300); margin-bottom: 20px;">
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--portal-slate-700);">Reassign Mentor:</span>
+          <select id="dossierMentorSelect" class="portal-form-select" style="flex: 1; padding: 6px 10px; font-size: 0.85rem;">
+            <option value="">-- Select Mentor --</option>
+          </select>
+          <button type="button" class="portal-btn portal-btn--primary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="saveDossierMentorChange()">Update Mentor</button>
+        </div>
+
+        <!-- Certificates Dossier History -->
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--portal-slate-800);">
+          Uploaded Credentials & Institutional Audit History (<span id="dossierCertCount">0</span>)
+        </h4>
+        <div id="dossierCertList">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="hod-modal-footer">
+        <button type="button" class="portal-btn portal-btn--outline" onclick="closeModal('dossierModal')">Close Dossier</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: Add / Edit Student -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="hod-modal-overlay" id="studentFormModal">
+    <div class="hod-modal-card">
+      <div class="hod-modal-header">
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--portal-slate-900);" id="studentModalTitle">Add New Student</h2>
+        <button type="button" class="portal-btn portal-btn--outline" style="padding: 4px 10px;" onclick="closeModal('studentFormModal')">✕</button>
+      </div>
+      <form id="studentForm" onsubmit="saveStudentForm(event)">
+        <input type="hidden" id="studentFormId">
+        <div class="hod-modal-body">
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuUsername">Registration Number / User ID *</label>
+              <input type="text" id="stuUsername" class="portal-form-input" placeholder="e.g. 2024CSE1001" required>
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuFullName">Full Name *</label>
+              <input type="text" id="stuFullName" class="portal-form-input" placeholder="e.g. Aditi Sharma" required>
+            </div>
+          </div>
+
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuDepartment">Department *</label>
+              <select id="stuDepartment" class="portal-form-select" required>
+                <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                <option value="Electronics and Communication">Electronics and Communication</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+              </select>
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuYear">Academic Year *</label>
+              <select id="stuYear" class="portal-form-select" required>
+                <option value="1">1st Year (Freshman)</option>
+                <option value="2">2nd Year (Sophomore)</option>
+                <option value="3">3rd Year (Junior)</option>
+                <option value="4">4th Year (Senior)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="portal-form-group">
+            <label class="portal-form-label" for="stuMentor">Assign Faculty Mentor</label>
+            <select id="stuMentor" class="portal-form-select">
+              <option value="">-- No Mentor Assigned (Assign Later) --</option>
+            </select>
+            <small style="color: var(--portal-slate-500); font-size: 0.775rem;">This student will appear on the selected teacher's mentor review dashboard.</small>
+          </div>
+
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuEmail">Email Address</label>
+              <input type="email" id="stuEmail" class="portal-form-input" placeholder="student@college.edu">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="stuPhone">Phone Number</label>
+              <input type="tel" id="stuPhone" class="portal-form-input" placeholder="+91-9876543210">
+            </div>
+          </div>
+
+          <div class="portal-form-group" id="stuPasswordGroup">
+            <label class="portal-form-label" for="stuPassword">Password <span id="stuPassHint" style="font-weight: normal; color: var(--portal-slate-400);">*</span></label>
+            <input type="password" id="stuPassword" class="portal-form-input" placeholder="Enter password for portal login">
+          </div>
+        </div>
+        <div class="hod-modal-footer">
+          <button type="button" class="portal-btn portal-btn--outline" onclick="closeModal('studentFormModal')">Cancel</button>
+          <button type="submit" class="portal-btn portal-btn--primary" id="stuSubmitBtn">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: Add / Edit Faculty & Mentor -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="hod-modal-overlay" id="staffFormModal">
+    <div class="hod-modal-card">
+      <div class="hod-modal-header">
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--portal-slate-900);" id="staffModalTitle">Add Faculty Member</h2>
+        <button type="button" class="portal-btn portal-btn--outline" style="padding: 4px 10px;" onclick="closeModal('staffFormModal')">✕</button>
+      </div>
+      <form id="staffForm" onsubmit="saveStaffForm(event)">
+        <input type="hidden" id="staffFormId">
+        <div class="hod-modal-body">
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffUsername">Faculty ID / User ID *</label>
+              <input type="text" id="staffUsername" class="portal-form-input" placeholder="e.g. STAFF105" required>
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffFullName">Full Name *</label>
+              <input type="text" id="staffFullName" class="portal-form-input" placeholder="e.g. Dr. Ramesh Sundaram" required>
+            </div>
+          </div>
+
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffDepartment">Department *</label>
+              <select id="staffDepartment" class="portal-form-select" required>
+                <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                <option value="Electronics and Communication">Electronics and Communication</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Administration">Administration</option>
+              </select>
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffDesignation">Academic Designation *</label>
+              <input type="text" id="staffDesignation" class="portal-form-input" placeholder="e.g. Associate Professor & Student Mentor" required>
+            </div>
+          </div>
+
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffEmail">Email Address</label>
+              <input type="email" id="staffEmail" class="portal-form-input" placeholder="faculty@college.edu">
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffPhone">Phone Number</label>
+              <input type="tel" id="staffPhone" class="portal-form-input" placeholder="+91-9876500003">
+            </div>
+          </div>
+
+          <div class="portal-grid-2">
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffRole">System Access Role *</label>
+              <select id="staffRole" class="portal-form-select" required>
+                <option value="staff">Faculty Mentor (Reviews Assigned Mentees)</option>
+                <option value="admin">HOD / Administrator (Full Access)</option>
+              </select>
+            </div>
+            <div class="portal-form-group">
+              <label class="portal-form-label" for="staffPassword">Password <span id="staffPassHint" style="font-weight: normal; color: var(--portal-slate-400);">*</span></label>
+              <input type="password" id="staffPassword" class="portal-form-input" placeholder="Enter password for portal login">
+            </div>
+          </div>
+        </div>
+        <div class="hod-modal-footer">
+          <button type="button" class="portal-btn portal-btn--outline" onclick="closeModal('staffFormModal')">Cancel</button>
+          <button type="submit" class="portal-btn portal-btn--primary" id="staffSubmitBtn">Save Faculty Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let allStudents = [];
+    let allMentors = [];
+    let currentTab = 'all'; // 'all', '1', '2', '3', '4', 'faculty'
+    let currentDossierStudentId = null;
+
+    async function initHODPage() {
+      const user = await initPortal('/hod_management.html');
+      if (!user) return;
+
+      await loadInitialData();
+    }
+
+    async function loadInitialData() {
+      // 1. Fetch staff/mentors
+      allMentors = await API.get('/api/hod/staff') || [];
+      populateMentorDropdowns();
+
+      // 2. Fetch all students
+      await refreshStudentsList();
+
+      // 3. Populate department filter
+      const depts = await API.get('/api/departments/list') || [];
+      const deptSelect = document.getElementById('hodDeptFilter');
+      deptSelect.innerHTML = '<option value="All">All Departments</option>' + depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+
+      renderFacultyTable();
+      updateDashboardCounts();
+    }
+
+    function populateMentorDropdowns() {
+      // Filter dropdown
+      const filterSelect = document.getElementById('hodMentorFilter');
+      filterSelect.innerHTML = '<option value="All">All Assigned Mentors</option>' + allMentors.map(m => `
+        <option value="${m.id}">${escapeHtml(m.full_name)} (${escapeHtml(m.department || '')})</option>
+      `).join('');
+
+      // Form dropdown
+      const formSelect = document.getElementById('stuMentor');
+      formSelect.innerHTML = '<option value="">-- No Mentor Assigned (Assign Later) --</option>' + allMentors.map(m => `
+        <option value="${m.id}">${escapeHtml(m.full_name)} — ${escapeHtml(m.designation || 'Faculty')}</option>
+      `).join('');
+
+      // Dossier modal dropdown
+      const dossierSelect = document.getElementById('dossierMentorSelect');
+      dossierSelect.innerHTML = '<option value="">-- No Mentor Assigned --</option>' + allMentors.map(m => `
+        <option value="${m.id}">${escapeHtml(m.full_name)} (${escapeHtml(m.department || '')})</option>
+      `).join('');
+    }
+
+    async function refreshStudentsList() {
+      allStudents = await API.get('/api/hod/students') || [];
+      applyFilters();
+      updateDashboardCounts();
+    }
+
+    function updateDashboardCounts() {
+      document.getElementById('statTotalStudents').textContent = allStudents.length;
+      document.getElementById('statTotalFaculty').textContent = allMentors.length;
+      document.getElementById('tabCountFaculty').textContent = allMentors.length;
+
+      let totalC = 0;
+      let pendingC = 0;
+
+      const counts = { all: allStudents.length, 1: 0, 2: 0, 3: 0, 4: 0 };
+      allStudents.forEach(s => {
+        const y = s.year || 1;
+        if (counts[y] !== undefined) counts[y]++;
+        totalC += (s.total_certs || 0);
+        pendingC += (s.pending_certs || 0);
+      });
+
+      document.getElementById('statTotalCerts').textContent = totalC;
+      document.getElementById('statPendingCerts').textContent = pendingC;
+
+      document.getElementById('tabCountAll').textContent = counts.all;
+      document.getElementById('tabCount1').textContent = counts[1];
+      document.getElementById('tabCount2').textContent = counts[2];
+      document.getElementById('tabCount3').textContent = counts[3];
+      document.getElementById('tabCount4').textContent = counts[4];
+    }
+
+    function switchMainTab(tabKey, btnElement) {
+      currentTab = tabKey;
+      document.querySelectorAll('.hod-tab-btn').forEach(b => b.classList.remove('is-active'));
+      if (btnElement) btnElement.classList.add('is-active');
+
+      if (tabKey === 'faculty') {
+        document.getElementById('studentsSection').style.display = 'none';
+        document.getElementById('studentsFilterToolbar').style.display = 'none';
+        document.getElementById('facultySection').style.display = 'block';
+        renderFacultyTable();
+      } else {
+        document.getElementById('facultySection').style.display = 'none';
+        document.getElementById('studentsSection').style.display = 'block';
+        document.getElementById('studentsFilterToolbar').style.display = 'flex';
+        applyFilters();
+      }
+    }
+
+    function applyFilters() {
+      if (currentTab === 'faculty') return;
+
+      const query = (document.getElementById('hodSearchInput').value || '').toLowerCase();
+      const dept = document.getElementById('hodDeptFilter').value;
+      const mentorId = document.getElementById('hodMentorFilter').value;
+
+      const filtered = allStudents.filter(s => {
+        // Tab Year filter
+        if (currentTab !== 'all' && String(s.year) !== String(currentTab)) return false;
+
+        // Dept filter
+        if (dept !== 'All' && s.department !== dept) return false;
+
+        // Mentor filter
+        if (mentorId !== 'All' && String(s.mentor_id) !== String(mentorId)) return false;
+
+        // Search query
+        if (query) {
+          const haystack = `${s.full_name} ${s.username} ${s.email} ${s.department} ${s.mentor_name || ''}`.toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+
+        return true;
+      });
+
+      renderStudentsTable(filtered);
+    }
+
+    function renderStudentsTable(records) {
+      const tbody = document.getElementById('studentsTableBody');
+      if (records.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px; color: var(--portal-slate-400);">
+              <div style="font-size: 2rem; margin-bottom: 8px;">👨‍🎓</div>
+              <div style="font-weight: 600; color: var(--portal-slate-700);">No students found matching current filters</div>
+              <div style="font-size: 0.85rem; margin-top: 4px;">Try selecting another year tab or modifying search keywords.</div>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      const yearNames = { 1: '1st Year', 2: '2nd Year', 3: '3rd Year', 4: '4th Year' };
+
+      tbody.innerHTML = records.map(s => {
+        const initials = (s.full_name || 'ST').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const yearLabel = yearNames[s.year] || `Year ${s.year}`;
+        
+        let mentorBadge = s.mentor_name
+          ? `<span class="hod-mentor-tag">👨‍🏫 ${escapeHtml(s.mentor_name)}</span>`
+          : `<span class="hod-mentor-tag hod-mentor-tag--unassigned">⚠️ Unassigned</span>`;
+
+        let integrityPill = s.avg_integrity
+          ? `<span class="portal-badge portal-badge--success">${s.avg_integrity}%</span>`
+          : `<span style="color: var(--portal-slate-400); font-size: 0.8rem;">No Audits</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="portal-avatar-circle" style="width: 38px; height: 38px; font-size: 0.85rem;">${initials}</div>
+                <div>
+                  <div style="font-weight: 700; color: var(--portal-slate-900);">${escapeHtml(s.full_name)}</div>
+                  <div style="font-size: 0.8rem; color: var(--portal-slate-500); font-family: monospace;">${escapeHtml(s.username)}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 600; color: var(--portal-slate-800);">${escapeHtml(s.department || 'General')}</div>
+              <span class="portal-badge portal-badge--brand" style="margin-top: 3px;">${yearLabel}</span>
+            </td>
+            <td>
+              ${mentorBadge}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="portal-badge portal-badge--info">Total: ${s.total_certs || 0}</span>
+                <span class="portal-badge portal-badge--success">✓ ${s.approved_certs || 0}</span>
+                ${s.pending_certs > 0 ? `<span class="portal-badge portal-badge--warning">⏳ ${s.pending_certs}</span>` : ''}
+              </div>
+            </td>
+            <td>
+              ${integrityPill}
+            </td>
+            <td style="text-align: right;">
+              <div style="display: inline-flex; gap: 6px;">
+                <button type="button" class="portal-btn portal-btn--outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="viewStudentDossier(${s.id})" title="View Complete Dossier & Certificates">
+                  🔍 Full Details
+                </button>
+                <button type="button" class="portal-btn portal-btn--outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="openEditStudentModal(${s.id})" title="Edit Student">
+                  ✏️ Edit
+                </button>
+                <button type="button" class="portal-btn portal-btn--danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="confirmDeleteStudent(${s.id}, '${escapeHtml(s.full_name)}')" title="Delete Student">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderFacultyTable() {
+      const tbody = document.getElementById('facultyTableBody');
+      if (allMentors.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 32px;">No faculty members found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = allMentors.map(f => `
+        <tr>
+          <td>
+            <div style="font-weight: 700; color: var(--portal-slate-900);">${escapeHtml(f.full_name)}</div>
+            <div style="font-size: 0.8rem; color: var(--portal-slate-500); font-family: monospace;">${escapeHtml(f.username)} • ${escapeHtml(f.email || '')}</div>
+          </td>
+          <td>${escapeHtml(f.department || 'General')}</td>
+          <td><span class="portal-badge portal-badge--brand">${escapeHtml(f.designation || 'Faculty')}</span></td>
+          <td><span class="portal-badge ${f.role === 'admin' ? 'portal-badge--accent' : 'portal-badge--neutral'}">${f.role.toUpperCase()}</span></td>
+          <td>
+            <span class="hod-mentor-tag" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0;">
+              👥 ${f.mentee_count || 0} Assigned Mentees
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="portal-btn portal-btn--outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="openEditStaffModal(${f.id})">✏️ Edit</button>
+              <button type="button" class="portal-btn portal-btn--danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="confirmDeleteStaff(${f.id}, '${escapeHtml(f.full_name)}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DOSSIER INSPECTION
+    // ═══════════════════════════════════════════════════════════════
+    async function viewStudentDossier(studentId) {
+      currentDossierStudentId = studentId;
+      const dossier = await API.get(`/api/hod/students/${studentId}`);
+      if (!dossier) {
+        showToast('Failed to load student dossier', 'error');
+        return;
+      }
+
+      const initials = (dossier.full_name || 'ST').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('dossierAvatar').textContent = initials;
+      document.getElementById('dossierFullName').textContent = dossier.full_name;
+      document.getElementById('dossierStudentSub').textContent = `Reg No: ${dossier.username} • Enrolled: ${formatDate(dossier.created_at)}`;
+      document.getElementById('dossierYearBadge').textContent = `Year ${dossier.year || 1}`;
+      document.getElementById('dossierContactMeta').textContent = `${dossier.department || 'Engineering'} • ✉️ ${dossier.email || 'No email'} • 📞 ${dossier.phone || 'No phone'}`;
+      
+      const mentorTag = document.getElementById('dossierMentorTag');
+      if (dossier.mentor_name) {
+        mentorTag.className = 'hod-mentor-tag';
+        mentorTag.textContent = `👨‍🏫 ${dossier.mentor_name} (${dossier.mentor_designation || 'Mentor'})`;
+      } else {
+        mentorTag.className = 'hod-mentor-tag hod-mentor-tag--unassigned';
+        mentorTag.textContent = '⚠️ Unassigned';
+      }
+
+      // Pre-select mentor in select box
+      document.getElementById('dossierMentorSelect').value = dossier.mentor_id || '';
+
+      // Render certificates list
+      const certList = document.getElementById('dossierCertList');
+      const certs = dossier.certificates || [];
+      document.getElementById('dossierCertCount').textContent = certs.length;
+
+      if (certs.length === 0) {
+        certList.innerHTML = `
+          <div style="text-align: center; padding: 24px; color: var(--portal-slate-400); background: #f8fafc; border-radius: 8px;">
+            No credentials submitted yet by this student.
+          </div>`;
+      } else {
+        certList.innerHTML = certs.map(c => `
+          <div class="hod-cert-item">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom: 2px;">
+                <strong style="color: var(--portal-slate-900); font-size: 0.95rem;">${escapeHtml(c.title)}</strong>
+                <span class="portal-badge portal-badge--info">${escapeHtml(c.cert_type || 'General')}</span>
+                ${c.verification_code ? `<span class="portal-badge portal-badge--neutral" style="font-family: monospace;">${escapeHtml(c.verification_code)}</span>` : ''}
+              </div>
+              <div style="font-size: 0.8rem; color: var(--portal-slate-500);">
+                Issued: ${formatDate(c.issue_date)} • Submitted: ${formatDate(c.created_at)}
+                ${c.skills ? ` • Skills: ${escapeHtml(c.skills)}` : ''}
+              </div>
+              ${c.review_feedback ? `<div style="font-size: 0.8rem; color: var(--portal-slate-600); margin-top: 4px; font-style: italic;">“${escapeHtml(c.review_feedback)}”</div>` : ''}
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              ${getStatusBadge(c.status)}
+              ${c.integrity_score > 0 ? `<span class="portal-badge portal-badge--success" title="AI Integrity Audit">🛡️ ${c.integrity_score}%</span>` : ''}
+              ${c.file_path ? `<a href="/${escapeHtml(c.file_path)}" target="_blank" class="portal-btn portal-btn--outline" style="padding: 4px 8px; font-size: 0.75rem;">View File</a>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      openModal('dossierModal');
+    }
+
+    async function saveDossierMentorChange() {
+      if (!currentDossierStudentId) return;
+      const mentorId = document.getElementById('dossierMentorSelect').value;
+
+      const res = await API.post('/api/hod/assign-mentor', {
+        student_id: currentDossierStudentId,
+        mentor_id: mentorId ? parseInt(mentorId) : null
+      });
+
+      if (res && res.success) {
+        showToast('Mentor assigned successfully!');
+        await refreshStudentsList();
+        // Update dossier view
+        await viewStudentDossier(currentDossierStudentId);
+      } else {
+        showToast(res?.error || 'Failed to assign mentor', 'error');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STUDENT ADD / EDIT / DELETE
+    // ═══════════════════════════════════════════════════════════════
+    function openAddStudentModal() {
+      document.getElementById('studentModalTitle').textContent = 'Add New Student';
+      document.getElementById('studentFormId').value = '';
+      document.getElementById('stuUsername').value = '';
+      document.getElementById('stuUsername').disabled = false;
+      document.getElementById('stuFullName').value = '';
+      document.getElementById('stuEmail').value = '';
+      document.getElementById('stuPhone').value = '';
+      document.getElementById('stuDepartment').value = 'Computer Science and Engineering';
+      document.getElementById('stuYear').value = '1';
+      document.getElementById('stuMentor').value = '';
+      document.getElementById('stuPassword').value = '';
+      document.getElementById('stuPassword').required = true;
+      document.getElementById('stuPassHint').textContent = '*';
+
+      openModal('studentFormModal');
+    }
+
+    function openEditStudentModal(studentId) {
+      const s = allStudents.find(item => item.id === studentId);
+      if (!s) return;
+
+      document.getElementById('studentModalTitle').textContent = 'Edit Student Profile';
+      document.getElementById('studentFormId').value = s.id;
+      document.getElementById('stuUsername').value = s.username;
+      document.getElementById('stuUsername').disabled = true; // cannot change reg no
+      document.getElementById('stuFullName').value = s.full_name || '';
+      document.getElementById('stuEmail').value = s.email || '';
+      document.getElementById('stuPhone').value = s.phone || '';
+      document.getElementById('stuDepartment').value = s.department || 'Computer Science and Engineering';
+      document.getElementById('stuYear').value = s.year || 1;
+      document.getElementById('stuMentor').value = s.mentor_id || '';
+      document.getElementById('stuPassword').value = '';
+      document.getElementById('stuPassword').required = false;
+      document.getElementById('stuPassHint').textContent = '(Leave blank to keep current password)';
+
+      openModal('studentFormModal');
+    }
+
+    async function saveStudentForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('studentFormId').value;
+      const data = {
+        username: document.getElementById('stuUsername').value,
+        full_name: document.getElementById('stuFullName').value,
+        email: document.getElementById('stuEmail').value,
+        phone: document.getElementById('stuPhone').value,
+        department: document.getElementById('stuDepartment').value,
+        year: parseInt(document.getElementById('stuYear').value),
+        mentor_id: document.getElementById('stuMentor').value ? parseInt(document.getElementById('stuMentor').value) : null,
+        password: document.getElementById('stuPassword').value
+      };
+
+      let res;
+      if (id) {
+        res = await API.put(`/api/hod/students/${id}`, data);
+      } else {
+        res = await API.post('/api/hod/students', data);
+      }
+
+      if (res && res.success) {
+        showToast(id ? 'Student profile updated!' : 'Student registered successfully!');
+        closeModal('studentFormModal');
+        await refreshStudentsList();
+      } else {
+        showToast(res?.error || 'Failed to save student', 'error');
+      }
+    }
+
+    async function confirmDeleteStudent(studentId, studentName) {
+      if (confirm(`Are you sure you want to delete student "${studentName}" and all their uploaded records? This action cannot be undone.`)) {
+        const res = await API.delete(`/api/hod/students/${studentId}`);
+        if (res && res.success) {
+          showToast('Student deleted successfully');
+          await refreshStudentsList();
+        } else {
+          showToast(res?.error || 'Failed to delete student', 'error');
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FACULTY ADD / EDIT / DELETE
+    // ═══════════════════════════════════════════════════════════════
+    function openAddStaffModal() {
+      document.getElementById('staffModalTitle').textContent = 'Add Faculty Member / Mentor';
+      document.getElementById('staffFormId').value = '';
+      document.getElementById('staffUsername').value = '';
+      document.getElementById('staffUsername').disabled = false;
+      document.getElementById('staffFullName').value = '';
+      document.getElementById('staffDepartment').value = 'Computer Science and Engineering';
+      document.getElementById('staffDesignation').value = 'Assistant Professor & Student Mentor';
+      document.getElementById('staffEmail').value = '';
+      document.getElementById('staffPhone').value = '';
+      document.getElementById('staffRole').value = 'staff';
+      document.getElementById('staffPassword').value = '';
+      document.getElementById('staffPassword').required = true;
+      document.getElementById('staffPassHint').textContent = '*';
+
+      openModal('staffFormModal');
+    }
+
+    function openEditStaffModal(staffId) {
+      const f = allMentors.find(item => item.id === staffId);
+      if (!f) return;
+
+      document.getElementById('staffModalTitle').textContent = 'Edit Faculty Profile';
+      document.getElementById('staffFormId').value = f.id;
+      document.getElementById('staffUsername').value = f.username;
+      document.getElementById('staffUsername').disabled = true;
+      document.getElementById('staffFullName').value = f.full_name || '';
+      document.getElementById('staffDepartment').value = f.department || 'Computer Science and Engineering';
+      document.getElementById('staffDesignation').value = f.designation || 'Faculty';
+      document.getElementById('staffEmail').value = f.email || '';
+      document.getElementById('staffPhone').value = f.phone || '';
+      document.getElementById('staffRole').value = f.role || 'staff';
+      document.getElementById('staffPassword').value = '';
+      document.getElementById('staffPassword').required = false;
+      document.getElementById('staffPassHint').textContent = '(Leave blank to keep current password)';
+
+      openModal('staffFormModal');
+    }
+
+    async function saveStaffForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('staffFormId').value;
+      const data = {
+        username: document.getElementById('staffUsername').value,
+        full_name: document.getElementById('staffFullName').value,
+        department: document.getElementById('staffDepartment').value,
+        designation: document.getElementById('staffDesignation').value,
+        email: document.getElementById('staffEmail').value,
+        phone: document.getElementById('staffPhone').value,
+        role: document.getElementById('staffRole').value,
+        password: document.getElementById('staffPassword').value
+      };
+
+      let res;
+      if (id) {
+        res = await API.put(`/api/hod/staff/${id}`, data);
+      } else {
+        res = await API.post('/api/hod/staff', data);
+      }
+
+      if (res && res.success) {
+        showToast(id ? 'Faculty member updated!' : 'Faculty registered successfully!');
+        closeModal('staffFormModal');
+        allMentors = await API.get('/api/hod/staff') || [];
+        populateMentorDropdowns();
+        renderFacultyTable();
+        await refreshStudentsList();
+      } else {
+        showToast(res?.error || 'Failed to save faculty member', 'error');
+      }
+    }
+
+    async function confirmDeleteStaff(staffId, staffName) {
+      if (confirm(`Are you sure you want to remove faculty member "${staffName}"? Any assigned mentees will be unassigned.`)) {
+        const res = await API.delete(`/api/hod/staff/${staffId}`);
+        if (res && res.success) {
+          showToast('Faculty removed successfully');
+          allMentors = await API.get('/api/hod/staff') || [];
+          populateMentorDropdowns();
+          renderFacultyTable();
+          await refreshStudentsList();
+        } else {
+          showToast(res?.error || 'Failed to remove faculty member', 'error');
+        }
+      }
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'none';
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', initHODPage);
+  </script>
+</body>
+</html>

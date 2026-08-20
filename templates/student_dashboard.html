@@ -13,7 +13,8 @@
     <div class="portal-page-header">
       <div class="portal-page-header__left">
         <h1 class="portal-page-title" id="studentGreeting">Student Dashboard</h1>
-        <p class="portal-page-description">Overview of your submitted credentials, verification states, and velocity metrics.</p>
+        <p class="portal-page-description" id="studentSubDescription">Overview of your submitted credentials, verification states, and velocity metrics.</p>
+        <div id="studentMentorPill" style="display: none; margin-top: 8px;"></div>
       </div>
       <div class="portal-page-actions">
         <a href="/add_certificate.html" class="portal-btn portal-btn--primary">
@@ -124,6 +125,17 @@
       if (!user) return;
 
       document.getElementById('studentGreeting').textContent = `Welcome, ${user.full_name}`;
+      const mentorPill = document.getElementById('studentMentorPill');
+      if (user.mentor_name) {
+        mentorPill.style.display = 'inline-flex';
+        mentorPill.className = 'hod-mentor-tag';
+        mentorPill.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:5px 12px; background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:20px; font-size:0.825rem; font-weight:600;';
+        mentorPill.innerHTML = `👨‍🏫 Assigned Faculty Mentor: ${escapeHtml(user.mentor_name)} ${user.mentor_email ? `(${escapeHtml(user.mentor_email)})` : ''} • Year ${user.year || 1}`;
+      } else {
+        mentorPill.style.display = 'inline-flex';
+        mentorPill.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:5px 12px; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:20px; font-size:0.825rem; font-weight:600;';
+        mentorPill.innerHTML = `⚠️ Faculty Mentor: Pending Assignment • Year ${user.year || 1}`;
+      }
 
       const [stats, certs] = await Promise.all([
         API.get('/api/analytics/summary'),

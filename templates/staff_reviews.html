@@ -88,7 +88,8 @@
               </div>
               <div style="font-size: 0.825rem; color: var(--portal-slate-500);">
                 Submitted by: <strong>${escapeHtml(c.student_name || 'Student')}</strong> (${escapeHtml(c.student_username || '')})
-                ${c.student_dept ? ` • Department of ${escapeHtml(c.student_dept)}` : ''}
+                ${c.student_year ? ` • <span class="portal-badge portal-badge--brand" style="font-size:0.7rem; padding:1px 6px;">Year ${c.student_year}</span>` : ''}
+                ${c.student_dept ? ` • ${escapeHtml(c.student_dept)}` : ''}
                 • Issued: ${formatDate(c.issue_date)}
               </div>
             </div>

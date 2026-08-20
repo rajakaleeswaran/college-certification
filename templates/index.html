@@ -21,9 +21,10 @@
     </div>
 
     <!-- Role Tabs -->
-    <div class="login-role-tabs" id="loginRoleTabs">
-      <button type="button" class="login-role-tab is-active" onclick="switchLoginMode('student')">Student Portal</button>
-      <button type="button" class="login-role-tab" onclick="switchLoginMode('staff')">Faculty & Staff</button>
+    <div class="login-role-tabs" id="loginRoleTabs" style="grid-template-columns: 1fr 1fr 1fr;">
+      <button type="button" class="login-role-tab is-active" onclick="switchLoginMode('student')">Student</button>
+      <button type="button" class="login-role-tab" onclick="switchLoginMode('mentor')">Mentor</button>
+      <button type="button" class="login-role-tab" onclick="switchLoginMode('hod')">HOD / Admin</button>
     </div>
 
     <!-- Quick Demo Credential Helper -->
@@ -63,7 +64,8 @@
       activeMode = mode;
       const tabs = document.querySelectorAll('#loginRoleTabs button');
       tabs[0].classList.toggle('is-active', mode === 'student');
-      tabs[1].classList.toggle('is-active', mode === 'staff');
+      tabs[1].classList.toggle('is-active', mode === 'mentor');
+      tabs[2].classList.toggle('is-active', mode === 'hod');
 
       const userField = document.getElementById('usernameField');
       const demoBox = document.getElementById('demoHelperBox');
@@ -72,10 +74,13 @@
 
       if (mode === 'student') {
         userField.placeholder = 'e.g. 2023CSE1234';
-        demoBox.innerHTML = 'Click to fill sample <strong>Student</strong> credentials';
-      } else {
+        demoBox.innerHTML = 'Click to fill sample <strong>Student</strong> credentials (Year 3)';
+      } else if (mode === 'mentor') {
         userField.placeholder = 'e.g. STAFF101';
-        demoBox.innerHTML = 'Click to fill sample <strong>Faculty</strong> credentials';
+        demoBox.innerHTML = 'Click to fill sample <strong>Mentor</strong> credentials (Dr. Anitha)';
+      } else {
+        userField.placeholder = 'e.g. ADMIN001';
+        demoBox.innerHTML = 'Click to fill sample <strong>HOD / Admin</strong> credentials';
       }
     }
 
@@ -83,9 +88,12 @@
       if (activeMode === 'student') {
         document.getElementById('usernameField').value = '2023CSE1234';
         document.getElementById('passwordField').value = 'password123';
-      } else {
+      } else if (activeMode === 'mentor') {
         document.getElementById('usernameField').value = 'STAFF101';
         document.getElementById('passwordField').value = 'staff123';
+      } else {
+        document.getElementById('usernameField').value = 'ADMIN001';
+        document.getElementById('passwordField').value = 'admin123';
       }
       showToast('Sample credentials loaded', 'success');
     }

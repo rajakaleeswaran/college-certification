@@ -15,7 +15,10 @@ const ICONS = {
   broadcast: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path><circle cx="12" cy="12" r="2"></circle><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"></path></svg>`,
   reviews: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
   settings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
-  shield: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`
+  shield: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+  users: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+  userCheck: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>`,
+  hod: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`
 };
 
 // ── REST API Helper ─────────────────────────────────────────────
@@ -58,6 +61,16 @@ const API = {
       return null;
     }
   },
+  async delete(url) {
+    try {
+      const res = await fetch(url, { method: 'DELETE' });
+      if (res.status === 401) { window.location.href = '/'; return null; }
+      return await res.json();
+    } catch (e) {
+      console.error('API DELETE Error:', e);
+      return null;
+    }
+  },
   async postForm(url, formData) {
     try {
       const res = await fetch(url, { method: 'POST', body: formData });
@@ -94,6 +107,20 @@ function showToast(message, type = 'success') {
 // ── Navigation Bar Builder ──────────────────────────────────────
 function renderCampusHeader(user) {
   const initials = user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  let roleBadgeSubtitle = 'Student Workspace';
+  if (user.role === 'admin' || user.role === 'hod') {
+    roleBadgeSubtitle = 'HOD & Admin Console';
+  } else if (user.role === 'staff') {
+    roleBadgeSubtitle = 'Faculty Mentor Console';
+  }
+
+  let userMetaSubtitle = user.department || user.role;
+  if (user.role === 'student') {
+    userMetaSubtitle = `Year ${user.year || 1} • ${user.department || 'Engineering'}`;
+  } else if (user.designation) {
+    userMetaSubtitle = user.designation;
+  }
+
   return `
     <header class="portal-header">
       <div class="portal-header__inner">
@@ -106,14 +133,14 @@ function renderCampusHeader(user) {
           </div>
           <div class="portal-brand__text">
             <span class="portal-brand__title">CertPortal</span>
-            <span class="portal-brand__sub">${user.role === 'student' ? 'Student Workspace' : 'Faculty Admin Console'}</span>
+            <span class="portal-brand__sub">${roleBadgeSubtitle}</span>
           </div>
         </a>
 
         <div class="portal-user-section">
           <div class="portal-user-meta">
             <span class="portal-user-meta__name">${escapeHtml(user.full_name)}</span>
-            <span class="portal-user-meta__role">${escapeHtml(user.department || user.role)}</span>
+            <span class="portal-user-meta__role">${escapeHtml(userMetaSubtitle)}</span>
           </div>
           <div class="portal-avatar-circle">${initials}</div>
         </div>
@@ -133,15 +160,29 @@ function renderSubNavBar(activePage, userRole) {
     { href: '/settings.html', label: 'Settings', icon: ICONS.settings },
   ];
 
-  const staffNav = [
-    { href: '/staff_dashboard.html', label: 'Faculty Overview', icon: ICONS.dashboard },
+  const mentorNav = [
+    { href: '/staff_dashboard.html', label: 'Mentor Overview & Mentees', icon: ICONS.dashboard },
+    { href: '/staff_reviews.html', label: 'Verification Queue', icon: ICONS.reviews },
+    { href: '/staff_notifications.html', label: 'Broadcast Center', icon: ICONS.broadcast },
+    { href: '/certificates.html', label: 'Mentee Records', icon: ICONS.certificates },
+    { href: '/settings.html', label: 'Account', icon: ICONS.settings },
+  ];
+
+  const hodNav = [
+    { href: '/hod_management.html', label: 'HOD Management Console', icon: ICONS.hod },
+    { href: '/staff_dashboard.html', label: 'Campus Analytics', icon: ICONS.dashboard },
     { href: '/staff_reviews.html', label: 'Verification Queue', icon: ICONS.reviews },
     { href: '/staff_notifications.html', label: 'Broadcast Center', icon: ICONS.broadcast },
     { href: '/certificates.html', label: 'All Records', icon: ICONS.certificates },
     { href: '/settings.html', label: 'Account', icon: ICONS.settings },
   ];
 
-  const items = (userRole === 'staff' || userRole === 'admin') ? staffNav : studentNav;
+  let items = studentNav;
+  if (userRole === 'admin' || userRole === 'hod') {
+    items = hodNav;
+  } else if (userRole === 'staff') {
+    items = mentorNav;
+  }
 
   const linksHtml = items.map(item => `
     <a href="${item.href}" class="portal-nav-item ${activePage === item.href ? 'is-active' : ''}">
